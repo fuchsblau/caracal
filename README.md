@@ -22,6 +22,7 @@ The authors and contributors of Caracal assume no responsibility for any losses 
 - **Fetch market data** — Pull OHLCV data from Yahoo Finance. Delta-fetch ensures you only download what's new.
 - **Technical indicators** — SMA, EMA, RSI, MACD, Bollinger Bands — calculated locally, no external service needed.
 - **Entry signals** — Rule-based buy/sell/hold recommendations with confidence scoring to support your decisions.
+- **Configurable** — TOML-based config with interactive wizard. Set your defaults once, override per command.
 - **Built for automation** — Structured JSON output for piping into scripts, dashboards, or AI agents.
 
 ## Quickstart
@@ -81,6 +82,31 @@ Use `--format json` for machine-readable output:
 caracal --format json analyze AAPL
 ```
 
+### Configuration
+
+Initialize with defaults:
+
+```bash
+caracal init
+```
+
+Interactively change settings:
+
+```bash
+caracal configure
+```
+
+Config is stored in `~/.caracal/config.toml`:
+
+```toml
+db_path = "~/.caracal/caracal.db"
+default_period = "1y"
+default_provider = "yahoo"
+default_format = "human"
+```
+
+CLI flags always override config values: `Defaults → config.toml → CLI flags`.
+
 Use `--debug` to show full stack traces on errors:
 
 ```bash
@@ -125,6 +151,7 @@ Caracal follows a modular architecture with six core packages:
 | Package | Purpose |
 |---------|---------|
 | `cli` | Click-based command interface |
+| `config` | TOML-based configuration management |
 | `providers` | Market data source abstraction (Yahoo Finance) |
 | `storage` | DuckDB-based local persistence |
 | `indicators` | Technical indicator calculations |

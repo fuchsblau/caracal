@@ -7,7 +7,7 @@
 
 Caracal fetches market data, calculates technical indicators, and gives you entry point recommendations — all from the command line. Your data stays on your machine, no account or API key required.
 
-> **Alpha Release** — Caracal is at v0.5.0 and under active development. APIs and behavior may change without notice.
+> **v1.0.0** — Stable release. Fetch market data, calculate technical indicators, and get entry point recommendations from your terminal.
 
 ## Disclaimer
 

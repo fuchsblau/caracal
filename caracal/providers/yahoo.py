@@ -6,10 +6,10 @@ from datetime import date
 import pandas as pd
 import yfinance as yf
 
+from caracal.providers.types import ProviderError, TickerNotFoundError
+
 # Suppress noisy yfinance warnings (e.g. "possibly delisted")
 logging.getLogger("yfinance").setLevel(logging.CRITICAL)
-
-from caracal.providers.types import ProviderError, TickerNotFoundError
 
 
 class YahooProvider:

@@ -7,7 +7,7 @@ def test_version_flag():
     runner = CliRunner()
     result = runner.invoke(cli, ["--version"])
     assert result.exit_code == 0
-    assert "0.5.0" in result.output
+    assert "1.0.0" in result.output
 
 
 def test_help_flag():

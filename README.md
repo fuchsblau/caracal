@@ -13,7 +13,7 @@
 
 Caracal fetches market data, calculates technical indicators, and gives you entry point recommendations — all from the command line. Your data stays on your machine, no account or API key required.
 
-> **v1.0.0** — Stable release. Fetch market data, calculate technical indicators, and get entry point recommendations from your terminal.
+> **v1.1.0** — Watchlist management. Create watchlists, track tickers, and view live prices — all from the CLI.
 
 ## Disclaimer
 
@@ -29,6 +29,7 @@ The authors and contributors of Caracal assume no responsibility for any losses 
 - **Technical indicators** — SMA, EMA, RSI, MACD, Bollinger Bands — calculated locally, no external service needed.
 - **Entry signals** — Rule-based buy/sell/hold recommendations with confidence scoring to support your decisions.
 - **Configurable** — TOML-based config with interactive wizard. Set your defaults once, override per command.
+- **Watchlists** — Create named watchlists, add/remove tickers, and view current prices with color-coded changes.
 - **Built for automation** — Structured JSON output for piping into scripts, dashboards, or AI agents.
 
 ## Quickstart
@@ -117,6 +118,42 @@ Use `--debug` to show full stack traces on errors:
 
 ```bash
 caracal --debug fetch INVALID
+```
+
+### Watchlists
+
+Create a watchlist and add tickers:
+
+```bash
+caracal watchlist create tech
+caracal watchlist add tech AAPL MSFT GOOGL
+```
+
+View all your watchlists:
+
+```bash
+caracal watchlist list
+```
+
+Show current prices for a watchlist:
+
+```bash
+$ caracal watchlist show tech
+        Watchlist — tech
+┌────────┬────────┬────────┬─────────┐
+│ Ticker │  Close │ Change │ Change% │
+├────────┼────────┼────────┼─────────┤
+│ AAPL   │ 178.72 │  +1.34 │  +0.76% │
+│ GOOGL  │ 141.80 │  -0.45 │  -0.32% │
+│ MSFT   │ 415.56 │  +2.10 │  +0.51% │
+└────────┴────────┴────────┴─────────┘
+```
+
+Remove tickers or delete a watchlist:
+
+```bash
+caracal watchlist remove tech MSFT
+caracal watchlist delete tech
 ```
 
 ## Requirements

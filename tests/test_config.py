@@ -2,7 +2,7 @@
 
 import pytest
 
-from caracal.config import CaracalConfig, load_config
+from caracal.config import CONFIG_TEMPLATE, CaracalConfig, load_config, write_config
 
 
 class TestCaracalConfigDefaults:
@@ -64,3 +64,37 @@ class TestLoadConfig:
         config_file.write_text("invalid = [unterminated\n")
         with pytest.raises(SystemExit):
             load_config(config_file)
+
+
+class TestConfigTemplate:
+    def test_template_is_valid_toml(self):
+        import tomllib
+
+        parsed = tomllib.loads(CONFIG_TEMPLATE)
+        assert "db_path" in parsed
+        assert "default_period" in parsed
+        assert "default_provider" in parsed
+        assert "default_format" in parsed
+
+    def test_template_has_comments(self):
+        assert "#" in CONFIG_TEMPLATE
+
+
+class TestWriteConfig:
+    def test_write_creates_file(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        cfg = CaracalConfig()
+        write_config(cfg, config_file)
+        assert config_file.exists()
+
+    def test_write_roundtrip(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        original = CaracalConfig(default_period="6mo", default_format="json")
+        write_config(original, config_file)
+        loaded = load_config(config_file)
+        assert loaded == original
+
+    def test_write_creates_parent_dirs(self, tmp_path):
+        config_file = tmp_path / "subdir" / "config.toml"
+        write_config(CaracalConfig(), config_file)
+        assert config_file.exists()

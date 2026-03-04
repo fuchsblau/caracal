@@ -26,6 +26,41 @@ class CaracalConfig:
     default_format: str = "human"
 
 
+CONFIG_TEMPLATE = """\
+# Caracal configuration file
+# See: https://github.com/fuchsblau/caracal
+
+# Path to the DuckDB database file
+db_path = "{db_path}"
+
+# Default time period for data fetching (1y, 6mo, 3mo, 1mo, 5y)
+default_period = "{default_period}"
+
+# Default market data provider
+default_provider = "{default_provider}"
+
+# Default output format (human, json)
+default_format = "{default_format}"
+"""
+
+
+def write_config(config: CaracalConfig, path: Path | None = None) -> Path:
+    """Write configuration to TOML file.
+
+    Returns the path written to.
+    """
+    config_path = path or CONFIG_PATH
+    config_path.parent.mkdir(parents=True, exist_ok=True)
+    content = CONFIG_TEMPLATE.format(
+        db_path=config.db_path,
+        default_period=config.default_period,
+        default_provider=config.default_provider,
+        default_format=config.default_format,
+    )
+    config_path.write_text(content)
+    return config_path
+
+
 def load_config(path: Path | None = None) -> CaracalConfig:
     """Load configuration from TOML file, merged with defaults.
 

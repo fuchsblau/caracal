@@ -4,9 +4,18 @@ import click
 
 from caracal import __version__
 from caracal.config import load_config
+from caracal.output.human import LOGO
 
 
-@click.group()
+class CaracalGroup(click.Group):
+    """Custom group that prepends the ASCII logo to help output."""
+
+    def format_help(self, ctx: click.Context, formatter: click.HelpFormatter) -> None:
+        formatter.write(f"\n{LOGO}\n\n")
+        super().format_help(ctx, formatter)
+
+
+@click.group(cls=CaracalGroup)
 @click.version_option(version=__version__, prog_name="caracal")
 @click.option(
     "--format",
@@ -23,7 +32,7 @@ from caracal.config import load_config
 )
 @click.pass_context
 def cli(ctx: click.Context, output_format: str | None, debug: bool) -> None:
-    """Caracal – Automated stock analysis."""
+    """Automated stock analysis from your terminal."""
     ctx.ensure_object(dict)
     config = load_config()
     ctx.obj["config"] = config

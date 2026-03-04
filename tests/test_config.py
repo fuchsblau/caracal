@@ -98,3 +98,17 @@ class TestWriteConfig:
         config_file = tmp_path / "subdir" / "config.toml"
         write_config(CaracalConfig(), config_file)
         assert config_file.exists()
+
+    def test_write_roundtrip_with_backslashes(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        original = CaracalConfig(db_path="C:\\Users\\test\\caracal.db")
+        write_config(original, config_file)
+        loaded = load_config(config_file)
+        assert loaded == original
+
+    def test_write_roundtrip_with_quotes(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        original = CaracalConfig(db_path='/path/with "quotes"/db')
+        write_config(original, config_file)
+        loaded = load_config(config_file)
+        assert loaded == original

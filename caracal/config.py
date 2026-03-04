@@ -44,6 +44,11 @@ default_format = "{default_format}"
 """
 
 
+def _toml_escape(value: str) -> str:
+    """Escape a string for use in a TOML basic string."""
+    return value.replace("\\", "\\\\").replace('"', '\\"')
+
+
 def write_config(config: CaracalConfig, path: Path | None = None) -> Path:
     """Write configuration to TOML file.
 
@@ -52,10 +57,10 @@ def write_config(config: CaracalConfig, path: Path | None = None) -> Path:
     config_path = path or CONFIG_PATH
     config_path.parent.mkdir(parents=True, exist_ok=True)
     content = CONFIG_TEMPLATE.format(
-        db_path=config.db_path,
-        default_period=config.default_period,
-        default_provider=config.default_provider,
-        default_format=config.default_format,
+        db_path=_toml_escape(config.db_path),
+        default_period=_toml_escape(config.default_period),
+        default_provider=_toml_escape(config.default_provider),
+        default_format=_toml_escape(config.default_format),
     )
     config_path.write_text(content)
     return config_path

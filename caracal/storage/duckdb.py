@@ -65,6 +65,21 @@ class DuckDBStorage:
                     PRIMARY KEY (ticker, date, name)
                 )
             """)
+            self._conn.execute("""
+                CREATE TABLE IF NOT EXISTS watchlists (
+                    name VARCHAR NOT NULL PRIMARY KEY,
+                    created_at TIMESTAMP DEFAULT current_timestamp
+                )
+            """)
+            self._conn.execute("""
+                CREATE TABLE IF NOT EXISTS watchlist_items (
+                    watchlist_name VARCHAR NOT NULL,
+                    ticker VARCHAR NOT NULL,
+                    added_at TIMESTAMP DEFAULT current_timestamp,
+                    PRIMARY KEY (watchlist_name, ticker),
+                    FOREIGN KEY (watchlist_name) REFERENCES watchlists(name)
+                )
+            """)
         except duckdb.Error as e:
             raise StorageError(f"Failed to initialise schema: {e}") from e
 
@@ -168,6 +183,121 @@ class DuckDBStorage:
             return self._conn.execute(query, params).fetchdf()
         except duckdb.Error as e:
             raise StorageError(f"Failed to get indicators: {e}") from e
+
+    # -- Watchlists -------------------------------------------------------
+
+    def create_watchlist(self, name: str) -> None:
+        """Create a named watchlist."""
+        try:
+            if self.watchlist_exists(name):
+                raise StorageError(f"Watchlist '{name}' already exists")
+            self._conn.execute("INSERT INTO watchlists (name) VALUES (?)", [name])
+        except StorageError:
+            raise
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to create watchlist: {e}") from e
+
+    def delete_watchlist(self, name: str) -> None:
+        """Delete a watchlist and all its items."""
+        try:
+            if not self.watchlist_exists(name):
+                raise StorageError(f"Watchlist '{name}' not found")
+            self._conn.execute(
+                "DELETE FROM watchlist_items WHERE watchlist_name = ?", [name]
+            )
+            self._conn.execute("DELETE FROM watchlists WHERE name = ?", [name])
+        except StorageError:
+            raise
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to delete watchlist: {e}") from e
+
+    def get_watchlists(self) -> list[dict]:
+        """Return all watchlists with ticker count."""
+        try:
+            result = self._conn.execute("""
+                SELECT w.name, w.created_at,
+                       COUNT(wi.ticker) AS ticker_count
+                FROM watchlists w
+                LEFT JOIN watchlist_items wi ON w.name = wi.watchlist_name
+                GROUP BY w.name, w.created_at
+                ORDER BY w.name
+            """).fetchall()
+            return [
+                {
+                    "name": row[0],
+                    "created_at": row[1],
+                    "ticker_count": row[2],
+                }
+                for row in result
+            ]
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to get watchlists: {e}") from e
+
+    def add_to_watchlist(self, name: str, ticker: str) -> None:
+        """Add a ticker to a watchlist."""
+        try:
+            if not self.watchlist_exists(name):
+                raise StorageError(f"Watchlist '{name}' not found")
+            existing = self._conn.execute(
+                "SELECT 1 FROM watchlist_items WHERE watchlist_name = ? AND ticker = ?",
+                [name, ticker],
+            ).fetchone()
+            if existing:
+                raise StorageError(f"Ticker '{ticker}' already in watchlist '{name}'")
+            self._conn.execute(
+                "INSERT INTO watchlist_items (watchlist_name, ticker) VALUES (?, ?)",
+                [name, ticker],
+            )
+        except StorageError:
+            raise
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to add to watchlist: {e}") from e
+
+    def remove_from_watchlist(self, name: str, ticker: str) -> None:
+        """Remove a ticker from a watchlist."""
+        try:
+            if not self.watchlist_exists(name):
+                raise StorageError(f"Watchlist '{name}' not found")
+            existing = self._conn.execute(
+                "SELECT 1 FROM watchlist_items WHERE watchlist_name = ? AND ticker = ?",
+                [name, ticker],
+            ).fetchone()
+            if not existing:
+                raise StorageError(f"Ticker '{ticker}' not in watchlist '{name}'")
+            self._conn.execute(
+                "DELETE FROM watchlist_items WHERE watchlist_name = ? AND ticker = ?",
+                [name, ticker],
+            )
+        except StorageError:
+            raise
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to remove from watchlist: {e}") from e
+
+    def get_watchlist_items(self, name: str) -> list[str]:
+        """Return all tickers in a watchlist."""
+        try:
+            if not self.watchlist_exists(name):
+                raise StorageError(f"Watchlist '{name}' not found")
+            result = self._conn.execute(
+                "SELECT ticker FROM watchlist_items"
+                " WHERE watchlist_name = ? ORDER BY ticker",
+                [name],
+            ).fetchall()
+            return [row[0] for row in result]
+        except StorageError:
+            raise
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to get watchlist items: {e}") from e
+
+    def watchlist_exists(self, name: str) -> bool:
+        """Check if a watchlist exists."""
+        try:
+            result = self._conn.execute(
+                "SELECT 1 FROM watchlists WHERE name = ?", [name]
+            ).fetchone()
+            return result is not None
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to check watchlist: {e}") from e
 
     # -- lifecycle --------------------------------------------------------
 

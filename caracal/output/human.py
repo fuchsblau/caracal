@@ -133,6 +133,61 @@ def format_header(title: str) -> str:
     return capture.get()
 
 
+def format_watchlist_list(watchlists: list[dict]) -> str:
+    """Format a list of watchlists as a Rich table."""
+    console = Console(file=None, force_terminal=True)
+    table = Table(title="Watchlists")
+    table.add_column("Name", style="bold")
+    table.add_column("Tickers", justify="right")
+    table.add_column("Created")
+    for wl in watchlists:
+        table.add_row(
+            wl["name"],
+            str(wl["ticker_count"]),
+            str(wl["created_at"]),
+        )
+    with console.capture() as capture:
+        console.print(table)
+    return capture.get()
+
+
+def format_watchlist_items(tickers: list[str], watchlist_name: str) -> str:
+    """Format watchlist ticker list as a Rich table."""
+    console = Console(file=None, force_terminal=True)
+    table = Table(title=f"Watchlist — {watchlist_name}")
+    table.add_column("Ticker", style="bold")
+    for ticker in tickers:
+        table.add_row(ticker)
+    with console.capture() as capture:
+        console.print(table)
+    return capture.get()
+
+
+def format_watchlist_prices(prices: list[dict], watchlist_name: str) -> str:
+    """Format watchlist prices as a Rich table with color-coded changes."""
+    console = Console(file=None, force_terminal=True)
+    table = Table(title=f"Watchlist — {watchlist_name}")
+    table.add_column("Ticker", style="bold")
+    table.add_column("Close", justify="right")
+    table.add_column("Change", justify="right")
+    table.add_column("Change%", justify="right")
+    for p in prices:
+        change = p.get("change")
+        change_pct = p.get("change_pct")
+        close_str = f"{p['close']:.2f}" if p.get("close") is not None else "N/A"
+        if change is not None:
+            style = "green" if change >= 0 else "red"
+            change_str = Text(f"{change:+.2f}", style=style)
+            pct_str = Text(f"{change_pct:+.2f}%", style=style)
+        else:
+            change_str = Text("N/A", style="dim")
+            pct_str = Text("N/A", style="dim")
+        table.add_row(p["ticker"], close_str, change_str, pct_str)
+    with console.capture() as capture:
+        console.print(table)
+    return capture.get()
+
+
 def _color_value(name: str, val: float) -> Text:
     """Apply color based on indicator semantics."""
     formatted = f"{val:.4f}"

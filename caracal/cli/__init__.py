@@ -59,3 +59,7 @@ cli.add_command(init)
 from caracal.cli.configure import configure  # noqa: E402
 
 cli.add_command(configure)
+
+from caracal.cli.watchlist import watchlist  # noqa: E402
+
+cli.add_command(watchlist)

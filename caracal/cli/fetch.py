@@ -99,8 +99,10 @@ def fetch(
                 click.echo(human_out.format_fetch_success(0, ticker))
         else:
             _output_error(
-                output_format, "INVALID_TICKER",
-                f"Ticker not found: {ticker}", meta,
+                output_format,
+                "INVALID_TICKER",
+                f"Ticker not found: {ticker}",
+                meta,
             )
             ctx.exit(2)
     except ProviderError as e:

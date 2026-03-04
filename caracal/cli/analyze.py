@@ -13,8 +13,8 @@ from caracal.output import json as json_out
 from caracal.storage.duckdb import DuckDBStorage
 
 
-def get_storage():
-    return DuckDBStorage()
+def get_storage(db_path: str = "~/.caracal/caracal.db"):
+    return DuckDBStorage(db_path)
 
 
 INDICATORS = [
@@ -35,7 +35,8 @@ def analyze(ctx: click.Context, ticker: str) -> None:
     """Calculate technical indicators for TICKER."""
     output_format = ctx.obj["format"]
     meta = {"ticker": ticker, "command": "analyze"}
-    storage = get_storage()
+    config = ctx.obj["config"]
+    storage = get_storage(config.db_path)
 
     try:
         df = storage.get_ohlcv(ticker)

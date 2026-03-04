@@ -15,31 +15,40 @@ def get_provider(name: str = "yahoo"):
     return _get_provider(name)
 
 
-def get_storage():
-    return DuckDBStorage()
+def get_storage(db_path: str = "~/.caracal/caracal.db"):
+    return DuckDBStorage(db_path)
 
 
 @click.command()
 @click.argument("ticker")
-@click.option("--period", default="1y", help="Period to fetch (e.g. 1y, 6mo, 3mo).")
-@click.option("--provider", default="yahoo", help="Data provider to use.")
+@click.option("--period", default=None, help="Period to fetch (e.g. 1y, 6mo, 3mo).")
+@click.option("--provider", default=None, help="Data provider to use.")
 @click.pass_context
-def fetch(ctx: click.Context, ticker: str, period: str, provider: str) -> None:
+def fetch(
+    ctx: click.Context,
+    ticker: str,
+    period: str | None,
+    provider: str | None,
+) -> None:
     """Fetch OHLCV data for TICKER."""
+    config = ctx.obj["config"]
     output_format = ctx.obj["format"]
     meta = {"ticker": ticker, "command": "fetch"}
 
+    effective_period = period or config.default_period
+    effective_provider = provider or config.default_provider
+
     try:
-        prov = get_provider(provider)
+        prov = get_provider(effective_provider)
     except ValueError as e:
         _output_error(output_format, "UNKNOWN_PROVIDER", str(e), meta)
         ctx.exit(1)
         return
 
-    storage = get_storage()
+    storage = get_storage(config.db_path)
 
     end_date = date.today()
-    start_date = _parse_period(period, end_date)
+    start_date = _parse_period(effective_period, end_date)
 
     try:
         # Delta-fetch: check latest date in storage

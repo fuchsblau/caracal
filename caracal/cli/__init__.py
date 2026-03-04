@@ -3,6 +3,7 @@
 import click
 
 from caracal import __version__
+from caracal.config import load_config
 
 
 @click.group()
@@ -11,7 +12,7 @@ from caracal import __version__
     "--format",
     "output_format",
     type=click.Choice(["human", "json"]),
-    default="human",
+    default=None,
     help="Output format.",
 )
 @click.option(
@@ -21,10 +22,12 @@ from caracal import __version__
     help="Show full stack traces on error.",
 )
 @click.pass_context
-def cli(ctx: click.Context, output_format: str, debug: bool) -> None:
+def cli(ctx: click.Context, output_format: str | None, debug: bool) -> None:
     """Caracal – Automated stock analysis."""
     ctx.ensure_object(dict)
-    ctx.obj["format"] = output_format
+    config = load_config()
+    ctx.obj["config"] = config
+    ctx.obj["format"] = output_format or config.default_format
     ctx.obj["debug"] = debug
 
 
@@ -43,3 +46,7 @@ cli.add_command(entry)
 from caracal.cli.init import init  # noqa: E402
 
 cli.add_command(init)
+
+from caracal.cli.configure import configure  # noqa: E402
+
+cli.add_command(configure)

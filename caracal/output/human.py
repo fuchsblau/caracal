@@ -7,6 +7,20 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+LOGO = (
+    "░█▀▀░█▀█░█▀▄░█▀█░█▀▀░█▀█░█░░\n"
+    "░█░░░█▀█░█▀▄░█▀█░█░░░█▀█░█░░\n"
+    "░▀▀▀░▀░▀░▀░▀░▀░▀░▀▀▀░▀░▀░▀▀▀"
+)
+
+
+def format_logo() -> str:
+    """Format the ASCII logo with styling."""
+    console = Console(file=None, force_terminal=True)
+    with console.capture() as capture:
+        console.print(f"\n[bold]{LOGO}[/bold]\n")
+    return capture.get()
+
 
 def format_ohlcv_table(df: pd.DataFrame, ticker: str) -> str:
     console = Console(file=None, force_terminal=True)

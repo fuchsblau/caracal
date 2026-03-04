@@ -55,6 +55,7 @@ def init(ctx: click.Context, force: bool) -> None:
             )
         )
     else:
+        click.echo(human_out.format_logo())
         click.echo(
             human_out.format_success_message(
                 "Caracal initialized.",

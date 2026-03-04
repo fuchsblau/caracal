@@ -18,7 +18,7 @@ def configure(ctx: click.Context) -> None:
     """Interactively configure caracal settings."""
     current = load_config()
 
-    click.echo(human_out.format_header("Caracal Configuration"))
+    click.echo(human_out.format_logo())
     click.echo("Press Enter to keep current value.\n")
 
     db_path = click.prompt("  db_path", default=current.db_path)

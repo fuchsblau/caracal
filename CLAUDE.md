@@ -1,0 +1,24 @@
+# CLAUDE.md — Caracal
+
+## Project
+
+Caracal is a CLI tool for automated stock analysis. It fetches market data, persists it, and calculates technical indicators.
+
+## Tech Stack
+
+- Python 3.12+, Click, Rich, yfinance, pandas, DuckDB
+- Build: setuptools with flat layout
+- Testing: pytest, ruff
+
+## Commands
+
+- `pip install -e ".[dev]"` — Install with dev dependencies
+- `pytest` — Run tests
+- `ruff check .` — Lint
+- `ruff format .` — Format
+
+## Conventions
+
+- Code language: English (variables, comments, commits)
+- Source layout: `caracal/` (flat layout) with subpackages (cli, providers, storage, indicators, analysis, output)
+- Tests mirror source structure under `tests/`

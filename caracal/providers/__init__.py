@@ -43,7 +43,5 @@ def get_provider(name: str = "yahoo") -> MarketDataProvider:
     """
     cls = PROVIDERS.get(name)
     if cls is None:
-        raise ValueError(
-            f"Unknown provider: {name}. Available: {', '.join(PROVIDERS)}"
-        )
+        raise ValueError(f"Unknown provider: {name}. Available: {', '.join(PROVIDERS)}")
     return cls()

@@ -9,6 +9,7 @@ from caracal.config import (
     load_config,
     write_config,
 )
+from caracal.output import human as human_out
 
 
 @click.command()
@@ -17,7 +18,7 @@ def configure(ctx: click.Context) -> None:
     """Interactively configure caracal settings."""
     current = load_config()
 
-    click.echo("Caracal Configuration")
+    click.echo(human_out.format_header("Caracal Configuration"))
     click.echo("Press Enter to keep current value.\n")
 
     db_path = click.prompt("  db_path", default=current.db_path)
@@ -36,4 +37,8 @@ def configure(ctx: click.Context) -> None:
 
     CONFIG_DIR.mkdir(parents=True, exist_ok=True)
     write_config(new_config)
-    click.echo(f"\nConfiguration saved to {CONFIG_PATH}")
+    click.echo(
+        human_out.format_success_message(
+            "Configuration saved.", {"Path": str(CONFIG_PATH)}
+        )
+    )

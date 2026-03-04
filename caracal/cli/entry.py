@@ -43,12 +43,6 @@ def entry(ctx: click.Context, ticker: str) -> None:
         if output_format == "json":
             click.echo(json_out.format_success(result, meta))
         else:
-            signal = result["signal"].upper()
-            confidence = result["confidence"]
-            click.echo(f"{ticker}: {signal} (confidence: {confidence:.0%})")
-            if result.get("indicators"):
-                for name, val in result["indicators"].items():
-                    if val is not None:
-                        click.echo(f"  {name}: {val:.4f}")
+            click.echo(human_out.format_entry_signal(result, ticker))
     finally:
         storage.close()

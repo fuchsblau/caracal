@@ -3,6 +3,7 @@
 import click
 
 from caracal.config import CONFIG_DIR, CONFIG_PATH, CaracalConfig, write_config
+from caracal.output import human as human_out
 
 
 @click.command()
@@ -29,8 +30,12 @@ def init(ctx: click.Context, force: bool) -> None:
                 )
             )
         else:
-            click.echo(f"Config already exists: {CONFIG_PATH}")
-            click.echo("Use 'caracal init --force' to overwrite.")
+            click.echo(
+                human_out.format_warning(
+                    f"Config already exists: {CONFIG_PATH}\n"
+                    "Use 'caracal init --force' to overwrite."
+                )
+            )
         return
 
     config = CaracalConfig()
@@ -50,6 +55,9 @@ def init(ctx: click.Context, force: bool) -> None:
             )
         )
     else:
-        click.echo("Caracal initialized.")
-        click.echo(f"  Config: {CONFIG_PATH}")
-        click.echo(f"  Database: {config.db_path}")
+        click.echo(
+            human_out.format_success_message(
+                "Caracal initialized.",
+                {"Config": str(CONFIG_PATH), "Database": config.db_path},
+            )
+        )

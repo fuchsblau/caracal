@@ -1,12 +1,15 @@
 """Rich-based human-readable output formatter."""
 
+from typing import Any
+
 import pandas as pd
 from rich.console import Console
 from rich.table import Table
+from rich.text import Text
 
 
 def format_ohlcv_table(df: pd.DataFrame, ticker: str) -> str:
-    console = Console(file=None, force_terminal=False)
+    console = Console(file=None, force_terminal=True)
     table = Table(title=f"OHLCV – {ticker}")
     for col in df.columns:
         table.add_column(str(col).capitalize())
@@ -18,19 +21,117 @@ def format_ohlcv_table(df: pd.DataFrame, ticker: str) -> str:
 
 
 def format_error_message(message: str) -> str:
-    console = Console(file=None, force_terminal=False)
+    console = Console(file=None, force_terminal=True)
     with console.capture() as capture:
         console.print(f"[bold red]Error:[/bold red] {message}")
     return capture.get()
 
 
-def format_indicators_table(df: pd.DataFrame, ticker: str) -> str:
-    console = Console(file=None, force_terminal=False)
+def format_indicators_dict(indicators: dict[str, Any], ticker: str) -> str:
+    """Format indicator results as a Rich table with color-coded values."""
+    console = Console(file=None, force_terminal=True)
     table = Table(title=f"Indicators – {ticker}")
-    for col in df.columns:
-        table.add_column(str(col).capitalize())
-    for _, row in df.iterrows():
-        table.add_row(*[str(v) for v in row])
+    table.add_column("Indicator", style="bold")
+    table.add_column("Value", justify="right")
+
+    for name, val in indicators.items():
+        if val is None:
+            table.add_row(name, Text("N/A", style="dim"))
+        else:
+            styled = _color_value(name, val)
+            table.add_row(name, styled)
+
     with console.capture() as capture:
         console.print(table)
     return capture.get()
+
+
+def format_entry_signal(result: dict[str, Any], ticker: str) -> str:
+    """Format entry signal with color-coded signal and confidence."""
+    console = Console(file=None, force_terminal=True)
+
+    signal = result["signal"].upper()
+    confidence = result["confidence"]
+
+    signal_colors = {"BUY": "bold green", "SELL": "bold red", "HOLD": "bold yellow"}
+    style = signal_colors.get(signal, "bold")
+
+    with console.capture() as capture:
+        console.print(
+            f"\n[bold]{ticker}[/bold]: [{style}]{signal}[/{style}]"
+            f" (confidence: {confidence:.0%})"
+        )
+
+        indicators = result.get("indicators", {})
+        if indicators:
+            table = Table(title="Indicators")
+            table.add_column("Indicator", style="bold")
+            table.add_column("Value", justify="right")
+            for name, val in indicators.items():
+                if val is None:
+                    table.add_row(name, Text("N/A", style="dim"))
+                else:
+                    styled = _color_value(name, val)
+                    table.add_row(name, styled)
+            console.print(table)
+
+    return capture.get()
+
+
+def format_fetch_success(rows_added: int, ticker: str) -> str:
+    """Format fetch success message."""
+    console = Console(file=None, force_terminal=True)
+    with console.capture() as capture:
+        if rows_added == 0:
+            console.print(f"[bold]{ticker}[/bold]: Already up to date.")
+        else:
+            console.print(
+                f"[bold green]Fetched {rows_added} rows[/bold green]"
+                f" for [bold]{ticker}[/bold]."
+            )
+    return capture.get()
+
+
+def format_success_message(message: str, details: dict[str, str] | None = None) -> str:
+    """Format a success message with optional key-value details."""
+    console = Console(file=None, force_terminal=True)
+    with console.capture() as capture:
+        console.print(f"[bold green]{message}[/bold green]")
+        if details:
+            for key, val in details.items():
+                console.print(f"  [bold]{key}:[/bold] {val}")
+    return capture.get()
+
+
+def format_warning(message: str) -> str:
+    """Format a warning message."""
+    console = Console(file=None, force_terminal=True)
+    with console.capture() as capture:
+        console.print(f"[bold yellow]Warning:[/bold yellow] {message}")
+    return capture.get()
+
+
+def format_header(title: str) -> str:
+    """Format a section header."""
+    console = Console(file=None, force_terminal=True)
+    with console.capture() as capture:
+        console.print(f"\n[bold]{title}[/bold]")
+    return capture.get()
+
+
+def _color_value(name: str, val: float) -> Text:
+    """Apply color based on indicator semantics."""
+    formatted = f"{val:.4f}"
+
+    if "rsi" in name:
+        if val > 70:
+            return Text(formatted, style="red")
+        elif val < 30:
+            return Text(formatted, style="green")
+        return Text(formatted)
+
+    if val > 0:
+        return Text(formatted, style="green")
+    elif val < 0:
+        return Text(formatted, style="red")
+    return Text(formatted)

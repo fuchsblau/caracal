@@ -1,9 +1,13 @@
 """Yahoo Finance market data provider."""
 
+import logging
 from datetime import date
 
 import pandas as pd
 import yfinance as yf
+
+# Suppress noisy yfinance warnings (e.g. "possibly delisted")
+logging.getLogger("yfinance").setLevel(logging.CRITICAL)
 
 from caracal.providers.types import ProviderError, TickerNotFoundError
 

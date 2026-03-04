@@ -75,7 +75,7 @@ class TestFetchCommand:
         # Second fetch should hit the "already up to date" path
         result = runner.invoke(cli, ["fetch", "AAPL"])
         assert result.exit_code == 0
-        assert "0 rows" in result.output
+        assert "Already up to date" in result.output
         assert "AAPL" in result.output
 
     @patch("caracal.cli.fetch.get_provider")

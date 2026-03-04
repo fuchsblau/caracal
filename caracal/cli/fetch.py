@@ -56,23 +56,53 @@ def fetch(
         if latest:
             start_date = latest + timedelta(days=1)
             if start_date > end_date:
-                _output_success(
-                    output_format,
-                    {
-                        "rows_added": 0,
-                        "ticker": ticker,
-                        "message": "Already up to date",
-                    },
-                    meta,
-                )
+                if output_format == "json":
+                    click.echo(
+                        json_out.format_success(
+                            {
+                                "rows_added": 0,
+                                "ticker": ticker,
+                                "message": "Already up to date",
+                            },
+                            meta,
+                        )
+                    )
+                else:
+                    click.echo(human_out.format_fetch_success(0, ticker))
                 return
 
         df = prov.fetch_ohlcv(ticker, start_date, end_date)
         count = storage.store_ohlcv(ticker, df)
-        _output_success(output_format, {"rows_added": count, "ticker": ticker}, meta)
-    except TickerNotFoundError as e:
-        _output_error(output_format, "INVALID_TICKER", str(e), meta)
-        ctx.exit(2)
+        if output_format == "json":
+            click.echo(
+                json_out.format_success({"rows_added": count, "ticker": ticker}, meta)
+            )
+        else:
+            click.echo(human_out.format_fetch_success(count, ticker))
+            if not df.empty:
+                click.echo(human_out.format_ohlcv_table(df.tail(10), ticker))
+    except TickerNotFoundError:
+        if latest:
+            # Delta-fetch: we have data, just nothing new
+            if output_format == "json":
+                click.echo(
+                    json_out.format_success(
+                        {
+                            "rows_added": 0,
+                            "ticker": ticker,
+                            "message": "No new data available",
+                        },
+                        meta,
+                    )
+                )
+            else:
+                click.echo(human_out.format_fetch_success(0, ticker))
+        else:
+            _output_error(
+                output_format, "INVALID_TICKER",
+                f"Ticker not found: {ticker}", meta,
+            )
+            ctx.exit(2)
     except ProviderError as e:
         _output_error(output_format, "PROVIDER_ERROR", str(e), meta)
         ctx.exit(1)
@@ -87,15 +117,6 @@ def _parse_period(period: str, end_date: date) -> date:
     mapping = {"1y": 365, "6mo": 182, "3mo": 91, "1mo": 30, "5y": 1825}
     days = mapping.get(period, 365)
     return end_date - timedelta(days=days)
-
-
-def _output_success(fmt: str, data: dict, meta: dict) -> None:
-    if fmt == "json":
-        click.echo(json_out.format_success(data, meta))
-    else:
-        click.echo(
-            f"Fetched {data.get('rows_added', 0)} rows for {data.get('ticker', '?')}"
-        )
 
 
 def _output_error(fmt: str, code: str, message: str, meta: dict) -> None:

@@ -39,7 +39,8 @@ class DataService:
     def get_watchlist_overview(self, name: str) -> list[dict]:
         """Return overview rows for a watchlist.
 
-        Each row: {ticker, close, change_pct, signal}
+        Each row: {ticker, close, change_pct, signal, confidence, rsi,
+                   macd_interpretation, bb_position}
         Uses cached OHLCV data from DuckDB — no provider calls.
         """
         tickers = self._storage.get_watchlist_items(name)
@@ -59,6 +60,10 @@ class DataService:
                 "close": None,
                 "change_pct": None,
                 "signal": "N/A",
+                "confidence": None,
+                "rsi": None,
+                "macd_interpretation": None,
+                "bb_position": None,
             }
 
         close = round(float(df.iloc[-1]["close"]), PRICE_DECIMALS)
@@ -72,15 +77,52 @@ class DataService:
                 )
 
         signal = "N/A"
+        confidence = None
+        rsi = None
+        macd_interpretation = None
+        bb_position = None
+
         if len(df) >= 30:
             result = calculate_entry_signal(df)
             signal = result["signal"]
+            confidence = result["confidence"]
+
+            indicators = result["indicators"]
+
+            # RSI value
+            rsi_val = indicators.get("rsi_14")
+            if rsi_val is not None:
+                rsi = round(rsi_val, PERCENT_DECIMALS)
+
+            # MACD interpretation: bullish if MACD > signal line
+            macd_val = indicators.get("macd")
+            macd_sig = indicators.get("macd_signal")
+            if macd_val is not None and macd_sig is not None:
+                macd_interpretation = "bull" if macd_val > macd_sig else "bear"
+
+            # Bollinger position: where is price relative to bands
+            bb_upper = indicators.get("bollinger_upper")
+            bb_lower = indicators.get("bollinger_lower")
+            if bb_upper is not None and bb_lower is not None:
+                band_width = bb_upper - bb_lower
+                if band_width > 0:
+                    position = (close - bb_lower) / band_width
+                    if position > 1.0:
+                        bb_position = "overbought"
+                    elif position < 0.0:
+                        bb_position = "oversold"
+                    else:
+                        bb_position = "neutral"
 
         return {
             "ticker": ticker,
             "close": close,
             "change_pct": change_pct,
             "signal": signal,
+            "confidence": confidence,
+            "rsi": rsi,
+            "macd_interpretation": macd_interpretation,
+            "bb_position": bb_position,
         }
 
     def create_watchlist(self, name: str) -> None:
@@ -100,6 +142,45 @@ class DataService:
 
         For actual live fetch, use refresh_watchlist_live() in a worker.
         """
+        return self.get_watchlist_overview(name)
+
+    def refresh_watchlist_live(self, name: str) -> list[dict]:
+        """Fetch fresh data from provider, recalculate, return overview.
+
+        For use in background workers — calls provider, stores results,
+        then returns fresh overview.  Falls back to cached data on any
+        provider error.
+        """
+        from datetime import date, timedelta
+
+        from caracal.providers import get_provider
+
+        tickers = self._storage.get_watchlist_items(name)
+
+        try:
+            provider_kwargs = {}
+            provider_name = self.config.default_provider
+            if provider_name in self.config.providers:
+                provider_kwargs = self.config.providers[provider_name]
+            provider = get_provider(provider_name, **provider_kwargs)
+
+            period_days = {
+                "1y": 365, "6mo": 182, "3mo": 91, "1mo": 30, "5y": 1825,
+            }
+            days = period_days.get(self.config.default_period, 365)
+            end_date = date.today()
+            start_date = end_date - timedelta(days=days)
+
+            for ticker in tickers:
+                try:
+                    df = provider.fetch_ohlcv(ticker, start_date, end_date)
+                    if not df.empty:
+                        self._storage.store_ohlcv(ticker, df)
+                except Exception:
+                    pass  # Keep cached data on provider failure
+        except Exception:
+            pass  # Fall back to cached data if provider unavailable
+
         return self.get_watchlist_overview(name)
 
     def add_to_watchlist(

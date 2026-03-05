@@ -1,10 +1,37 @@
 """Tests for TUI DataService."""
 
+from datetime import date, timedelta
+
+import pandas as pd
 import pytest
 
 from caracal.config import CaracalConfig
 from caracal.storage.duckdb import DuckDBStorage, StorageError
 from caracal.tui.data import DataService
+
+
+def _store_ohlcv(storage, ticker, days=31, trend="flat"):
+    """Store synthetic OHLCV data for testing."""
+    base_price = 100.0
+    rows = []
+    for i in range(days):
+        if trend == "up":
+            price = base_price + i * 2
+        elif trend == "down":
+            price = base_price - i * 2
+        else:
+            price = base_price + (i % 3 - 1)
+        d = date.today() - timedelta(days=days - i)
+        rows.append({
+            "date": d,
+            "open": price - 0.5,
+            "high": price + 1,
+            "low": price - 1,
+            "close": price,
+            "volume": 1000000,
+        })
+    df = pd.DataFrame(rows)
+    storage.store_ohlcv(ticker, df)
 
 
 @pytest.fixture
@@ -235,3 +262,47 @@ class TestGetWatchlistsDetail:
         wl = next(w for w in result if w["name"] == sample_watchlist)
         assert "name" in wl
         assert "ticker_count" in wl
+
+
+class TestGetWatchlistOverviewWithIndicators:
+    """Test enriched watchlist overview with indicator data."""
+
+    def test_returns_indicator_fields(self, data_service, storage):
+        storage.create_watchlist("tech")
+        storage.add_to_watchlist("tech", "AAPL")
+        _store_ohlcv(storage, "AAPL", days=31)
+        rows = data_service.get_watchlist_overview("tech")
+        row = rows[0]
+        assert "confidence" in row
+        assert "rsi" in row
+        assert "macd_interpretation" in row
+        assert "bb_position" in row
+
+    def test_indicator_fields_none_when_insufficient_data(self, data_service, storage):
+        storage.create_watchlist("tech")
+        storage.add_to_watchlist("tech", "NEW")
+        _store_ohlcv(storage, "NEW", days=5)
+        rows = data_service.get_watchlist_overview("tech")
+        row = rows[0]
+        assert row["confidence"] is None
+        assert row["rsi"] is None
+        assert row["macd_interpretation"] is None
+        assert row["bb_position"] is None
+
+    def test_rsi_overbought_interpretation(self, data_service, storage):
+        """RSI > 70 should be marked as overbought."""
+        storage.create_watchlist("tech")
+        storage.add_to_watchlist("tech", "OB")
+        _store_ohlcv(storage, "OB", days=31, trend="up")
+        rows = data_service.get_watchlist_overview("tech")
+        assert rows[0]["rsi"] is not None
+
+
+class TestRefreshWatchlistLive:
+    def test_refresh_live_calls_provider_and_updates(self, data_service, storage):
+        storage.create_watchlist("tech")
+        storage.add_to_watchlist("tech", "AAPL")
+        _store_ohlcv(storage, "AAPL", days=31)
+        rows = data_service.refresh_watchlist_live("tech")
+        assert len(rows) == 1
+        assert rows[0]["ticker"] == "AAPL"

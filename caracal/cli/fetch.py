@@ -6,13 +6,17 @@ import click
 
 from caracal.output import human as human_out
 from caracal.output import json as json_out
+from caracal.config import CaracalConfig
 from caracal.providers import get_provider as _get_provider
 from caracal.providers.types import ProviderError, StorageError, TickerNotFoundError
 from caracal.storage.duckdb import DuckDBStorage
 
 
-def get_provider(name: str = "yahoo"):
-    return _get_provider(name)
+def get_provider(name: str = "yahoo", config: CaracalConfig | None = None):
+    kwargs = {}
+    if config and name in config.providers:
+        kwargs = config.providers[name]
+    return _get_provider(name, **kwargs)
 
 
 def get_storage(db_path: str = "~/.caracal/caracal.db"):
@@ -39,7 +43,7 @@ def fetch(
     effective_provider = provider or config.default_provider
 
     try:
-        prov = get_provider(effective_provider)
+        prov = get_provider(effective_provider, config)
     except ValueError as e:
         _output_error(output_format, "UNKNOWN_PROVIDER", str(e), meta)
         ctx.exit(1)

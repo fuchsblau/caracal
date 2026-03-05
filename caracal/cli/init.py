@@ -39,7 +39,8 @@ def init(ctx: click.Context, force: bool) -> None:
         return
 
     config = CaracalConfig()
-    write_config(config)
+    path = write_config(config)
+    path.chmod(0o600)
 
     if output_format == "json":
         from caracal.output import json as json_out

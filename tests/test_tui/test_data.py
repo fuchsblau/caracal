@@ -107,6 +107,29 @@ class TestGetStockDetail:
         assert detail["signal"] == "N/A"
 
 
+class TestRefreshWatchlist:
+    def test_refresh_returns_updated_rows(self, data_service, storage):
+        import pandas as pd
+
+        storage.create_watchlist("tech")
+        storage.add_to_watchlist("tech", "AAPL")
+
+        df = pd.DataFrame({
+            "date": pd.to_datetime(["2024-01-02", "2024-01-03"]),
+            "open": [150.0, 152.0],
+            "high": [155.0, 156.0],
+            "low": [149.0, 151.0],
+            "close": [153.0, 155.0],
+            "volume": [1000000, 1100000],
+        })
+        storage.store_ohlcv("AAPL", df)
+
+        # refresh_watchlist re-reads from storage
+        rows = data_service.refresh_watchlist("tech")
+        assert len(rows) == 1
+        assert rows[0]["ticker"] == "AAPL"
+
+
 class TestGetAppInfo:
     def test_returns_version_and_config(self, data_service):
         info = data_service.get_app_info()

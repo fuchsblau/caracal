@@ -113,3 +113,4 @@ class WatchlistScreen(Screen):
     def action_refresh_data(self) -> None:
         """Reload data from DuckDB cache."""
         self._load_watchlist()
+        self.notify("Data refreshed from cache", severity="information")

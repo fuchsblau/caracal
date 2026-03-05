@@ -83,6 +83,13 @@ class DataService:
             "signal": signal,
         }
 
+    def refresh_watchlist(self, name: str) -> list[dict]:
+        """Re-read watchlist data from storage (no provider fetch).
+
+        For actual live fetch, use refresh_watchlist_live() in a worker.
+        """
+        return self.get_watchlist_overview(name)
+
     # -- Stock detail ---------------------------------------------------------
 
     def get_stock_detail(self, ticker: str) -> dict:

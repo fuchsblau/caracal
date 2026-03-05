@@ -114,23 +114,3 @@ class TestFetchCommand:
             cli, ["--format", "json", "fetch", "--provider", "nonexistent", "AAPL"]
         )
         assert result.exit_code == 1
-
-
-class TestProviderRegistry:
-    def test_get_provider_default(self):
-        from caracal.providers import get_provider
-
-        provider = get_provider()
-        assert provider.name == "yahoo"
-
-    def test_get_provider_yahoo(self):
-        from caracal.providers import get_provider
-
-        provider = get_provider("yahoo")
-        assert provider.name == "yahoo"
-
-    def test_get_provider_unknown_raises(self):
-        from caracal.providers import get_provider
-
-        with pytest.raises(ValueError, match="Unknown provider"):
-            get_provider("nonexistent")

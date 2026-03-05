@@ -4,9 +4,9 @@ from datetime import date, timedelta
 
 import click
 
+from caracal.config import CaracalConfig
 from caracal.output import human as human_out
 from caracal.output import json as json_out
-from caracal.config import CaracalConfig
 from caracal.providers import get_provider as _get_provider
 from caracal.providers.types import ProviderError, StorageError
 from caracal.storage.duckdb import DuckDBStorage

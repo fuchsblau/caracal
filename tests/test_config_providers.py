@@ -3,9 +3,7 @@
 import os
 from unittest.mock import patch
 
-import pytest
-
-from caracal.config import CaracalConfig, load_config, write_config, mask_secret
+from caracal.config import CaracalConfig, load_config, mask_secret, write_config
 
 
 class TestProviderConfig:

@@ -2,7 +2,6 @@ import json
 from datetime import date
 from unittest.mock import patch
 
-import pytest
 from click.testing import CliRunner
 
 from caracal.cli import cli

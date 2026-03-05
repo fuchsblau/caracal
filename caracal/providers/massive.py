@@ -1,6 +1,6 @@
 """Massive.com (formerly Polygon.io) market data provider."""
 
-from datetime import date, datetime, timezone
+from datetime import UTC, date, datetime
 
 import pandas as pd
 
@@ -57,7 +57,7 @@ class MassiveProvider:
         rows = []
         for agg in aggs:
             dt = datetime.fromtimestamp(
-                agg.timestamp / 1000, tz=timezone.utc
+                agg.timestamp / 1000, tz=UTC
             ).date()
             rows.append({
                 "date": dt,

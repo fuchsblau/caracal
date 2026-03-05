@@ -1,6 +1,6 @@
 """Tests for TUI theme constants."""
 
-from caracal.tui.theme import COLOR_PRICE, COLOR_POSITIVE, COLOR_NEGATIVE, SIGNAL_COLORS
+from caracal.tui.theme import COLOR_NEGATIVE, COLOR_POSITIVE, COLOR_PRICE, SIGNAL_COLORS
 
 
 def test_signal_colors_cover_all_signals():

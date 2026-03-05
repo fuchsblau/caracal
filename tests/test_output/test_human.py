@@ -2,7 +2,13 @@ from datetime import date
 
 import pandas as pd
 
-from caracal.output.human import _color_value, format_error_message, format_ohlcv_table
+from caracal.output.human import (
+    _color_value,
+    format_entry_signal,
+    format_error_message,
+    format_ohlcv_table,
+    format_watchlist_prices,
+)
 
 
 def test_format_ohlcv_table():
@@ -58,3 +64,25 @@ def test_color_value_uses_two_decimals():
 def test_color_value_rsi_two_decimals():
     result = _color_value("rsi_14", 38.2199)
     assert result.plain == "38.22"
+
+
+def test_format_entry_signal_confidence_precision():
+    """Confidence should show 2 decimal places as percent."""
+    result_data = {
+        "signal": "buy",
+        "confidence": 0.7234,
+        "indicators": {},
+    }
+    output = format_entry_signal(result_data, "AAPL")
+    assert "72.34%" in output
+
+
+def test_format_watchlist_prices_precision():
+    """Watchlist prices should use precision constants."""
+    prices = [
+        {"ticker": "AAPL", "close": 178.123, "change": 1.567, "change_pct": 0.889},
+    ]
+    output = format_watchlist_prices(prices, "test")
+    assert "178.12" in output
+    assert "+1.57" in output
+    assert "+0.89%" in output

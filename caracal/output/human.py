@@ -7,6 +7,10 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
+from caracal.output.precision import PRICE_DECIMALS, VOLUME_DECIMALS
+
+_PRICE_COLUMNS = {"open", "high", "low", "close"}
+
 LOGO = (
     "░█▀▀░█▀█░█▀▄░█▀█░█▀▀░█▀█░█░░\n"
     "░█░░░█▀█░█▀▄░█▀█░█░░░█▀█░█░░\n"
@@ -22,13 +26,23 @@ def format_logo() -> str:
     return capture.get()
 
 
+def _format_ohlcv_cell(col: str, val: object) -> str:
+    """Format a single OHLCV cell based on column name."""
+    col_lower = str(col).lower()
+    if col_lower in _PRICE_COLUMNS:
+        return f"{val:.{PRICE_DECIMALS}f}"
+    if col_lower == "volume":
+        return f"{val:.{VOLUME_DECIMALS}f}"
+    return str(val)
+
+
 def format_ohlcv_table(df: pd.DataFrame, ticker: str) -> str:
     console = Console(file=None, force_terminal=True)
     table = Table(title=f"OHLCV – {ticker}")
     for col in df.columns:
         table.add_column(str(col).capitalize())
     for _, row in df.iterrows():
-        table.add_row(*[str(v) for v in row])
+        table.add_row(*[_format_ohlcv_cell(col, v) for col, v in row.items()])
     with console.capture() as capture:
         console.print(table)
     return capture.get()

@@ -1,6 +1,7 @@
 """Tests for WatchlistScreen."""
 
 import pytest
+from rich.text import Text
 
 from caracal.config import CaracalConfig
 from caracal.storage.duckdb import DuckDBStorage
@@ -230,3 +231,47 @@ class TestRemoveTicker:
             from caracal.tui.screens.watchlist import WatchlistScreen
 
             assert isinstance(app_empty_watchlist.screen, WatchlistScreen)
+
+
+class TestRichTextStyling:
+    """Tests for semantic color coding in watchlist table cells."""
+
+    @pytest.mark.asyncio
+    async def test_price_cell_is_rich_text_right_aligned(self, app_with_data):
+        async with app_with_data.run_test() as pilot:
+            from textual.coordinate import Coordinate
+
+            table = app_with_data.screen.query_one("#watchlist-table")
+            cell = table.get_cell_at(Coordinate(0, 1))
+            assert isinstance(cell, Text)
+            assert cell.justify == "right"
+
+    @pytest.mark.asyncio
+    async def test_positive_change_is_rich_text(self, app_with_data):
+        async with app_with_data.run_test() as pilot:
+            from textual.coordinate import Coordinate
+
+            table = app_with_data.screen.query_one("#watchlist-table")
+            cell = table.get_cell_at(Coordinate(0, 2))
+            assert isinstance(cell, Text)
+
+    @pytest.mark.asyncio
+    async def test_signal_cell_is_uppercase_rich_text(self, app_with_data):
+        async with app_with_data.run_test() as pilot:
+            from textual.coordinate import Coordinate
+
+            table = app_with_data.screen.query_one("#watchlist-table")
+            cell = table.get_cell_at(Coordinate(0, 3))
+            assert isinstance(cell, Text)
+            assert str(cell) in ("BUY", "SELL", "HOLD", "N/A")
+
+    @pytest.mark.asyncio
+    async def test_na_cell_is_rich_text(self, app_empty_watchlist):
+        async with app_empty_watchlist.run_test() as pilot:
+            from textual.coordinate import Coordinate
+
+            table = app_empty_watchlist.screen.query_one("#watchlist-table")
+            if table.row_count > 0:
+                cell = table.get_cell_at(Coordinate(0, 1))
+                assert isinstance(cell, Text)
+                assert str(cell) == "N/A"

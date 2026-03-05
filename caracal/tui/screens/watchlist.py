@@ -4,12 +4,23 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from rich.text import Text
 from textual.app import ComposeResult
 from textual.binding import Binding
 from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Static
 
 from caracal.storage.duckdb import StorageError
+
+COLOR_PRICE = "cyan"
+COLOR_POSITIVE = "#4caf50"
+COLOR_NEGATIVE = "#f44336"
+COLOR_MUTED = "dim"
+SIGNAL_COLORS = {
+    "buy": "#4caf50",
+    "sell": "#f44336",
+    "hold": "#ffc107",
+}
 
 if TYPE_CHECKING:
     from caracal.tui.data import DataService
@@ -87,14 +98,25 @@ class WatchlistScreen(Screen):
         hint.display = False
 
         for row in rows:
-            close_str = f"{row['close']:.2f}" if row["close"] is not None else "N/A"
-            pct_str = (
-                f"{row['change_pct']:+.2f}%"
-                if row["change_pct"] is not None
-                else "N/A"
-            )
-            signal = row["signal"]
-            table.add_row(row["ticker"], close_str, pct_str, signal, key=row["ticker"])
+            symbol = Text(row["ticker"])
+
+            if row["close"] is not None:
+                price = Text(f"{row['close']:.2f}", style=COLOR_PRICE, justify="right")
+            else:
+                price = Text("N/A", style=COLOR_MUTED, justify="right")
+
+            if row["change_pct"] is not None:
+                pct_val = row["change_pct"]
+                pct_color = COLOR_POSITIVE if pct_val >= 0 else COLOR_NEGATIVE
+                pct = Text(f"{pct_val:+.2f}%", style=pct_color, justify="right")
+            else:
+                pct = Text("N/A", style=COLOR_MUTED, justify="right")
+
+            sig = row["signal"]
+            sig_color = SIGNAL_COLORS.get(sig, COLOR_MUTED)
+            sig_text = Text(sig.upper(), style=f"bold {sig_color}", justify="right")
+
+            table.add_row(symbol, price, pct, sig_text, key=row["ticker"])
 
     def action_cursor_down(self) -> None:
         self.query_one("#watchlist-table", DataTable).action_cursor_down()

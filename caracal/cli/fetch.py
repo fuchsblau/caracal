@@ -44,6 +44,10 @@ def fetch(
         _output_error(output_format, "UNKNOWN_PROVIDER", str(e), meta)
         ctx.exit(1)
         return
+    except ImportError as e:
+        _output_error(output_format, "MISSING_DEPENDENCY", str(e), meta)
+        ctx.exit(1)
+        return
 
     storage = get_storage(config.db_path)
 

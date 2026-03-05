@@ -31,6 +31,8 @@ class TestProviderRegistry:
     def test_get_provider_missing_dep_raises_importerror(self):
         from caracal.providers import get_provider
 
+        # Patch on the importlib module attr — works because providers/__init__.py
+        # uses `importlib.import_module()` (attribute access, not from-import).
         with patch("importlib.import_module", side_effect=ImportError("No module")):
             with pytest.raises(ImportError, match="pip install caracal"):
                 get_provider("massive")

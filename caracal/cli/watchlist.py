@@ -193,7 +193,13 @@ def show(ctx: click.Context, name: str) -> None:
                 click.echo(human_out.format_warning(msg))
             return
 
-        provider = get_provider(config.default_provider)
+        try:
+            provider = get_provider(config.default_provider)
+        except ImportError as e:
+            _output_error(output_format, "MISSING_DEPENDENCY", str(e), meta)
+            ctx.exit(1)
+            return
+
         end_date = date.today()
         start_date = end_date - timedelta(days=5)
 

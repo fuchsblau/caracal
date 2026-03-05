@@ -3,6 +3,7 @@
 import pandas as pd
 import pytest
 from rich.text import Text
+from textual.coordinate import Coordinate
 
 from caracal.config import CaracalConfig
 from caracal.storage.duckdb import DuckDBStorage
@@ -67,11 +68,10 @@ class TestRichTextStyling:
             await pilot.pause()
             screen = app.screen
             table = screen.query_one("#indicators-table")
-            if table.row_count > 0:
-                from textual.widgets._data_table import Coordinate
-                cell = table.get_cell_at(Coordinate(0, 1))
-                assert isinstance(cell, Text)
-                assert cell.justify == "right"
+            assert table.row_count > 0, "Expected indicator data in table"
+            cell = table.get_cell_at(Coordinate(0, 1))
+            assert isinstance(cell, Text)
+            assert cell.justify == "right"
 
     @pytest.mark.asyncio
     async def test_ohlcv_close_is_rich_text_right_aligned(self, app):
@@ -80,11 +80,10 @@ class TestRichTextStyling:
             await pilot.pause()
             screen = app.screen
             table = screen.query_one("#ohlcv-table")
-            if table.row_count > 0:
-                from textual.widgets._data_table import Coordinate
-                cell = table.get_cell_at(Coordinate(0, 4))  # Close column
-                assert isinstance(cell, Text)
-                assert cell.justify == "right"
+            assert table.row_count > 0, "Expected OHLCV data in table"
+            cell = table.get_cell_at(Coordinate(0, 4))  # Close column
+            assert isinstance(cell, Text)
+            assert cell.justify == "right"
 
     @pytest.mark.asyncio
     async def test_ohlcv_volume_is_right_aligned(self, app):
@@ -93,8 +92,7 @@ class TestRichTextStyling:
             await pilot.pause()
             screen = app.screen
             table = screen.query_one("#ohlcv-table")
-            if table.row_count > 0:
-                from textual.widgets._data_table import Coordinate
-                cell = table.get_cell_at(Coordinate(0, 5))  # Volume column
-                assert isinstance(cell, Text)
-                assert cell.justify == "right"
+            assert table.row_count > 0, "Expected OHLCV data in table"
+            cell = table.get_cell_at(Coordinate(0, 5))  # Volume column
+            assert isinstance(cell, Text)
+            assert cell.justify == "right"

@@ -69,6 +69,8 @@ class CaracalApp(App):
     async def on_mount(self) -> None:
         self._watchlist_names = self.data_service.get_watchlist_names()
         await self._load_all_watchlists()
+        # Start auto-refresh timer (30s)
+        self.set_interval(30, self._auto_refresh)
 
     async def _load_all_watchlists(self) -> None:
         """Load all watchlists into the panel."""
@@ -79,6 +81,17 @@ class CaracalApp(App):
         await panel.load_watchlists(data)
         if self._watchlist_names:
             self.active_watchlist = self._watchlist_names[0]
+
+    async def _auto_refresh(self) -> None:
+        """Auto-refresh from DB cache."""
+        name = self.active_watchlist
+        if not name:
+            return
+        panel = self.query_one("#watchlist-panel", WatchlistPanel)
+        if panel.in_detail:
+            return
+        rows = self.data_service.get_watchlist_overview(name)
+        panel.refresh_watchlist(name, rows)
 
     # -- Navigation -----------------------------------------------------------
 

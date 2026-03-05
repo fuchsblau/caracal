@@ -6,7 +6,15 @@ from caracal.output.human import (
     _color_value,
     format_entry_signal,
     format_error_message,
+    format_fetch_success,
+    format_header,
+    format_indicators_dict,
+    format_logo,
     format_ohlcv_table,
+    format_success_message,
+    format_warning,
+    format_watchlist_items,
+    format_watchlist_list,
     format_watchlist_prices,
 )
 
@@ -77,6 +85,24 @@ def test_format_entry_signal_confidence_precision():
     assert "72.34%" in output
 
 
+def test_format_entry_signal_with_indicators():
+    """Entry signal with indicator values should show indicator table."""
+    result_data = {
+        "signal": "sell",
+        "confidence": 0.65,
+        "indicators": {
+            "sma_20": 178.35,
+            "rsi_14": 75.0,
+            "macd": None,
+        },
+    }
+    output = format_entry_signal(result_data, "AAPL")
+    assert "SELL" in output
+    assert "sma_20" in output
+    assert "178.35" in output
+    assert "N/A" in output  # macd is None
+
+
 def test_format_watchlist_prices_precision():
     """Watchlist prices should use precision constants."""
     prices = [
@@ -86,3 +112,74 @@ def test_format_watchlist_prices_precision():
     assert "178.12" in output
     assert "+1.57" in output
     assert "+0.89%" in output
+
+
+def test_format_indicators_dict_with_values():
+    indicators = {"sma_20": 178.35, "rsi_14": 65.42}
+    output = format_indicators_dict(indicators, "AAPL")
+    assert "sma_20" in output
+    assert "178.35" in output
+    assert "AAPL" in output
+
+
+def test_format_indicators_dict_with_none():
+    indicators = {"sma_50": None, "rsi_14": 45.0}
+    output = format_indicators_dict(indicators, "TEST")
+    assert "N/A" in output
+
+
+def test_format_fetch_success_rows_added():
+    output = format_fetch_success(42, "AAPL")
+    assert "42" in output
+    assert "AAPL" in output
+
+
+def test_format_fetch_success_up_to_date():
+    output = format_fetch_success(0, "AAPL")
+    assert "up to date" in output.lower()
+
+
+def test_format_success_message_simple():
+    output = format_success_message("Config created")
+    assert "Config created" in output
+
+
+def test_format_success_message_with_details():
+    output = format_success_message("Done", {"path": "/tmp/test.toml"})
+    # Rich adds ANSI styling to paths; check parts separately
+    assert "path" in output
+    assert "test.toml" in output
+
+
+def test_format_warning():
+    output = format_warning("API rate limited")
+    assert "API rate limited" in output
+
+
+def test_format_header():
+    output = format_header("Analysis Results")
+    assert "Analysis Results" in output
+
+
+def test_format_watchlist_list_table():
+    watchlists = [
+        {"name": "tech", "ticker_count": 5, "created_at": "2024-01-01"},
+    ]
+    output = format_watchlist_list(watchlists)
+    assert "tech" in output
+    assert "5" in output
+
+
+def test_format_watchlist_items_table():
+    output = format_watchlist_items(["AAPL", "GOOG"], "tech")
+    assert "AAPL" in output
+    assert "GOOG" in output
+    assert "tech" in output
+
+
+def test_format_logo():
+    """Logo is ASCII block art, not literal text."""
+    output = format_logo()
+    # Logo uses Unicode block characters (e.g. ░█▀▀)
+    assert len(output) > 0
+    assert "\n" in output

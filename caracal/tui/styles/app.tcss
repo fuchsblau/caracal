@@ -12,6 +12,7 @@ Header {
 
 Footer {
     dock: bottom;
+    align-horizontal: right;
 }
 
 #watchlist-table {
@@ -25,6 +26,7 @@ DataTable > .datatable--cursor {
 DataTable > .datatable--header {
     background: $surface-darken-1;
     text-style: bold;
+    color: #00bcd4;
 }
 
 #empty-hint {

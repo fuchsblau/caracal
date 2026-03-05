@@ -23,6 +23,8 @@ class WatchlistScreen(Screen):
         Binding("k", "cursor_up", "Up", show=False),
         Binding("enter", "select_row", "Detail"),
         Binding("r", "refresh_data", "Refresh"),
+        Binding("a", "add_ticker", "Add"),
+        Binding("x", "remove_ticker", "Remove"),
         Binding("c", "create_watchlist", "Create"),
         Binding("d", "delete_watchlist", "Delete"),
         Binding("w", "select_watchlist", "Watchlists"),
@@ -76,7 +78,7 @@ class WatchlistScreen(Screen):
         if not rows:
             table.display = False
             msg = f"No tickers in '{name}'."
-            msg += f" Add with: caracal watchlist add {name} <ticker>"
+            msg += " Press a to add tickers."
             hint.update(msg)
             hint.display = True
             return
@@ -125,6 +127,63 @@ class WatchlistScreen(Screen):
             return
         self._watchlist_names = self.data_service.get_watchlist_names()
         self._current_index = self._watchlist_names.index(name)
+        self._load_watchlist()
+
+    def action_add_ticker(self) -> None:
+        if not self._watchlist_names:
+            return
+        from caracal.tui.screens.add_ticker import AddTickerModal
+
+        self.app.push_screen(AddTickerModal(), self._on_add_ticker_result)
+
+    def _on_add_ticker_result(self, tickers: list[str] | None) -> None:
+        if tickers is None:
+            return
+        name = self.current_watchlist
+        if name is None:
+            return
+        try:
+            added, duplicates = self.data_service.add_to_watchlist(name, tickers)
+        except StorageError as e:
+            self.notify(str(e), severity="error")
+            return
+        if duplicates:
+            self.notify(
+                f"Already in watchlist: {', '.join(duplicates)}",
+                severity="warning",
+            )
+        if added:
+            self._load_watchlist()
+            self.notify(f"Added: {', '.join(added)}", severity="information")
+
+    def action_remove_ticker(self) -> None:
+        if not self._watchlist_names:
+            return
+        table = self.query_one("#watchlist-table", DataTable)
+        if table.row_count == 0:
+            return
+        row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
+        ticker = str(row_key.value)
+        from caracal.tui.screens.remove_ticker import RemoveTickerModal
+
+        self.app.push_screen(
+            RemoveTickerModal(ticker), self._on_remove_ticker_result
+        )
+
+    def _on_remove_ticker_result(self, confirmed: bool) -> None:
+        if not confirmed:
+            return
+        name = self.current_watchlist
+        if name is None:
+            return
+        table = self.query_one("#watchlist-table", DataTable)
+        row_key, _ = table.coordinate_to_cell_key(table.cursor_coordinate)
+        ticker = str(row_key.value)
+        try:
+            self.data_service.remove_from_watchlist(name, ticker)
+        except StorageError as e:
+            self.notify(str(e), severity="error")
+            return
         self._load_watchlist()
 
     def action_delete_watchlist(self) -> None:

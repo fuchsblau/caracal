@@ -76,6 +76,15 @@ def app_no_watchlists(config):
     return CaracalApp(config=config, data_service=data_service)
 
 
+@pytest.fixture
+def app_empty_watchlist(config):
+    """App with a watchlist that has no tickers."""
+    storage = DuckDBStorage(":memory:")
+    storage.create_watchlist("empty")
+    data_service = DataService(config, storage=storage)
+    return CaracalApp(config=config, data_service=data_service)
+
+
 class TestWatchlistScreen:
     @pytest.mark.asyncio
     async def test_shows_watchlist_data(self, app_with_data):
@@ -181,3 +190,43 @@ class TestWatchlistManagement:
             from caracal.tui.screens.watchlist import WatchlistScreen
 
             assert isinstance(app_no_watchlists.screen, WatchlistScreen)
+
+
+class TestAddTicker:
+    @pytest.mark.asyncio
+    async def test_add_ticker_binding_opens_modal(self, app_with_data):
+        """Pressing 'a' opens the AddTickerModal."""
+        async with app_with_data.run_test() as pilot:
+            await pilot.press("a")
+            from caracal.tui.screens.add_ticker import AddTickerModal
+
+            assert isinstance(app_with_data.screen, AddTickerModal)
+
+    @pytest.mark.asyncio
+    async def test_add_ticker_no_modal_when_no_watchlists(self, app_no_watchlists):
+        """Pressing 'a' does nothing when no watchlists exist."""
+        async with app_no_watchlists.run_test() as pilot:
+            await pilot.press("a")
+            from caracal.tui.screens.watchlist import WatchlistScreen
+
+            assert isinstance(app_no_watchlists.screen, WatchlistScreen)
+
+
+class TestRemoveTicker:
+    @pytest.mark.asyncio
+    async def test_remove_ticker_binding_opens_modal(self, app_with_data):
+        """Pressing 'x' opens the RemoveTickerModal."""
+        async with app_with_data.run_test() as pilot:
+            await pilot.press("x")
+            from caracal.tui.screens.remove_ticker import RemoveTickerModal
+
+            assert isinstance(app_with_data.screen, RemoveTickerModal)
+
+    @pytest.mark.asyncio
+    async def test_remove_ticker_no_modal_when_table_empty(self, app_empty_watchlist):
+        """Pressing 'x' does nothing when no tickers in watchlist."""
+        async with app_empty_watchlist.run_test() as pilot:
+            await pilot.press("x")
+            from caracal.tui.screens.watchlist import WatchlistScreen
+
+            assert isinstance(app_empty_watchlist.screen, WatchlistScreen)

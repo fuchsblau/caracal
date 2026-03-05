@@ -6,11 +6,17 @@ from typing import Any
 
 from caracal.output.precision import PRICE_DECIMALS
 
+# JSON output uses uniform rounding for all floats. Currently all
+# precision constants (price, indicator, percent) are 2, so PRICE_DECIMALS
+# is representative. If asset-class-specific precision is needed later,
+# this function would need field-name-aware rounding.
+_JSON_DECIMALS = PRICE_DECIMALS
+
 
 def _round_floats(obj: Any) -> Any:
     """Recursively round float values in nested data structures."""
     if isinstance(obj, float):
-        return round(obj, PRICE_DECIMALS)
+        return round(obj, _JSON_DECIMALS)
     if isinstance(obj, dict):
         return {k: _round_floats(v) for k, v in obj.items()}
     if isinstance(obj, (list, tuple)):

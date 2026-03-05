@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from rich.text import Text
 from textual.app import ComposeResult
 from textual.containers import VerticalScroll
 from textual.screen import Screen
@@ -11,6 +12,9 @@ from textual.widgets import DataTable, Footer, Header, Static
 
 if TYPE_CHECKING:
     from caracal.tui.data import DataService
+
+COLOR_PRICE = "cyan"
+COLOR_MUTED = "dim"
 
 SIGNAL_STYLES = {
     "buy": "[bold #4caf50]BUY[/]",
@@ -60,8 +64,12 @@ class StockDetailScreen(Screen):
         ind_table = self.query_one("#indicators-table", DataTable)
         ind_table.add_columns("Indicator", "Value")
         for name, val in detail["indicators"].items():
-            val_str = f"{val:.2f}" if val is not None else "N/A"
-            ind_table.add_row(name, val_str)
+            name_text = Text(name)
+            if val is not None:
+                val_text = Text(f"{val:.2f}", style=COLOR_PRICE, justify="right")
+            else:
+                val_text = Text("N/A", style=COLOR_MUTED, justify="right")
+            ind_table.add_row(name_text, val_text)
 
         if not detail["indicators"]:
             ind_table.display = False
@@ -71,12 +79,12 @@ class StockDetailScreen(Screen):
         ohlcv_table.add_columns("Date", "Open", "High", "Low", "Close", "Volume")
         for row in detail["ohlcv"]:
             ohlcv_table.add_row(
-                row["date"],
-                f"{row['open']:.2f}",
-                f"{row['high']:.2f}",
-                f"{row['low']:.2f}",
-                f"{row['close']:.2f}",
-                f"{row['volume']:,}",
+                Text(row["date"]),
+                Text(f"{row['open']:.2f}", style=COLOR_PRICE, justify="right"),
+                Text(f"{row['high']:.2f}", style=COLOR_PRICE, justify="right"),
+                Text(f"{row['low']:.2f}", style=COLOR_PRICE, justify="right"),
+                Text(f"{row['close']:.2f}", style=COLOR_PRICE, justify="right"),
+                Text(f"{row['volume']:,}", justify="right"),
             )
 
         if not detail["ohlcv"]:

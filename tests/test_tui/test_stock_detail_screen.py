@@ -2,6 +2,7 @@
 
 import pandas as pd
 import pytest
+from rich.text import Text
 
 from caracal.config import CaracalConfig
 from caracal.storage.duckdb import DuckDBStorage
@@ -56,3 +57,44 @@ class TestStockDetailScreen:
             app.screen.action_select_row()
             await pilot.pause()
             assert "AAPL" in app.screen.sub_title
+
+
+class TestRichTextStyling:
+    @pytest.mark.asyncio
+    async def test_indicator_value_is_rich_text_right_aligned(self, app):
+        async with app.run_test() as pilot:
+            app.screen.action_select_row()
+            await pilot.pause()
+            screen = app.screen
+            table = screen.query_one("#indicators-table")
+            if table.row_count > 0:
+                from textual.widgets._data_table import Coordinate
+                cell = table.get_cell_at(Coordinate(0, 1))
+                assert isinstance(cell, Text)
+                assert cell.justify == "right"
+
+    @pytest.mark.asyncio
+    async def test_ohlcv_close_is_rich_text_right_aligned(self, app):
+        async with app.run_test() as pilot:
+            app.screen.action_select_row()
+            await pilot.pause()
+            screen = app.screen
+            table = screen.query_one("#ohlcv-table")
+            if table.row_count > 0:
+                from textual.widgets._data_table import Coordinate
+                cell = table.get_cell_at(Coordinate(0, 4))  # Close column
+                assert isinstance(cell, Text)
+                assert cell.justify == "right"
+
+    @pytest.mark.asyncio
+    async def test_ohlcv_volume_is_right_aligned(self, app):
+        async with app.run_test() as pilot:
+            app.screen.action_select_row()
+            await pilot.pause()
+            screen = app.screen
+            table = screen.query_one("#ohlcv-table")
+            if table.row_count > 0:
+                from textual.widgets._data_table import Coordinate
+                cell = table.get_cell_at(Coordinate(0, 5))  # Volume column
+                assert isinstance(cell, Text)
+                assert cell.justify == "right"

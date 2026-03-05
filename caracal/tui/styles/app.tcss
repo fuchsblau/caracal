@@ -20,11 +20,23 @@ Footer {
     height: 1fr;
 }
 
+WatchlistPanel {
+    height: 1fr;
+}
+
 #watchlist-panel {
     width: 1fr;
 }
 
+#watchlist-tabs {
+    height: 1fr;
+}
+
 #watchlist-table {
+    height: 1fr;
+}
+
+WatchlistTable DataTable {
     height: 1fr;
 }
 
@@ -66,25 +78,29 @@ DataTable > .datatable--header {
     color: #f44336;
 }
 
-/* Stock Detail Screen */
-#detail-header {
+/* Asset Detail View */
+AssetDetailView {
+    height: 1fr;
+}
+
+AssetDetailView #detail-header {
     padding: 1 2;
     background: $surface-darken-1;
     text-style: bold;
 }
 
-.section-title {
+AssetDetailView .section-title {
     padding: 1 2 0 2;
     color: #00bcd4;
 }
 
-#indicators-table {
+AssetDetailView #indicators-table {
     height: auto;
     max-height: 14;
     margin: 0 2;
 }
 
-#ohlcv-table {
+AssetDetailView #ohlcv-table {
     height: auto;
     max-height: 14;
     margin: 0 2;

@@ -11,9 +11,9 @@
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
-Caracal fetches market data, calculates technical indicators, and gives you entry point recommendations — all from the command line. Your data stays on your machine, no account or API key required.
+Caracal fetches market data, calculates technical indicators, and gives you entry point recommendations — all from the command line. Your data stays on your machine.
 
-> **v1.1.0** — Watchlist management. Create watchlists, track tickers, and view live prices — all from the CLI.
+> **v1.2.0** — Multi-provider support. Fetch data from Yahoo Finance, Massive.com, or Interactive Brokers. All providers are optional — install only what you need.
 
 ## Disclaimer
 
@@ -25,17 +25,18 @@ The authors and contributors of Caracal assume no responsibility for any losses 
 
 ## Features
 
-- **Fetch market data** — Pull OHLCV data from Yahoo Finance. Delta-fetch ensures you only download what's new.
+- **Multiple data providers** — Yahoo Finance (default), Massive.com, Interactive Brokers. Install only what you need.
+- **Fetch market data** — Pull OHLCV data with delta-fetch — only downloads what's new.
 - **Technical indicators** — SMA, EMA, RSI, MACD, Bollinger Bands — calculated locally, no external service needed.
 - **Entry signals** — Rule-based buy/sell/hold recommendations with confidence scoring to support your decisions.
-- **Configurable** — TOML-based config with interactive wizard. Set your defaults once, override per command.
+- **Configurable** — TOML-based config with interactive wizard. Provider API keys, connection settings, and defaults.
 - **Watchlists** — Create named watchlists, add/remove tickers, and view current prices with color-coded changes.
 - **Built for automation** — Structured JSON output for piping into scripts, dashboards, or AI agents.
 
 ## Quickstart
 
 ```bash
-pip install -e "."
+pip install caracal[all]
 caracal init
 caracal fetch AAPL
 caracal analyze AAPL
@@ -69,6 +70,7 @@ Fetch market data for a ticker:
 ```bash
 caracal fetch AAPL
 caracal fetch MSFT --period 2y
+caracal fetch AAPL --provider massive
 ```
 
 Run technical analysis:
@@ -110,9 +112,23 @@ db_path = "~/.caracal/caracal.db"
 default_period = "1y"
 default_provider = "yahoo"
 default_format = "human"
+
+[providers.massive]
+api_key = "your-api-key"
+
+[providers.ibkr]
+host = "127.0.0.1"
+port = "7497"
+client_id = "1"
 ```
 
-CLI flags always override config values: `Defaults → config.toml → CLI flags`.
+Provider settings can also be set via environment variables:
+
+```bash
+export CARACAL_MASSIVE_API_KEY="your-api-key"
+```
+
+CLI flags always override config values: `Defaults → config.toml → env vars → CLI flags`.
 
 Use `--debug` to show full stack traces on errors:
 
@@ -162,10 +178,34 @@ caracal watchlist delete tech
 
 ## Installation
 
+Install with all providers:
+
+```bash
+pip install caracal[all]
+```
+
+Or pick only the providers you need:
+
+```bash
+pip install caracal[yahoo]     # Yahoo Finance (default, no API key needed)
+pip install caracal[massive]   # Massive.com (requires API key)
+pip install caracal[ibkr]      # Interactive Brokers (requires TWS/Gateway)
+```
+
+### Data Providers
+
+| Provider | Package | Requires | Best for |
+|----------|---------|----------|----------|
+| Yahoo Finance | `caracal[yahoo]` | Nothing | Free data, getting started |
+| Massive.com | `caracal[massive]` | API key | Professional market data |
+| Interactive Brokers | `caracal[ibkr]` | TWS/Gateway running | Real-time data, existing IBKR account |
+
+From source:
+
 ```bash
 git clone https://github.com/fuchsblau/caracal.git
 cd caracal
-pip install -e "."
+pip install -e ".[all]"
 ```
 
 For development:
@@ -195,7 +235,7 @@ Caracal follows a modular architecture with six core packages:
 |---------|---------|
 | `cli` | Click-based command interface |
 | `config` | TOML-based configuration management |
-| `providers` | Market data source abstraction (Yahoo Finance) |
+| `providers` | Market data source abstraction (Yahoo, Massive, IBKR) |
 | `storage` | DuckDB-based local persistence |
 | `indicators` | Technical indicator calculations |
 | `analysis` | Rule-based entry signal logic |

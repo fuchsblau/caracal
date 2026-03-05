@@ -69,9 +69,9 @@ class WatchlistScreen(Screen):
         rows = self.data_service.get_watchlist_overview(name)
         if not rows:
             table.display = False
-            hint.update(
-                f"No tickers in '{name}'. Add with: caracal watchlist add {name} <ticker>"
-            )
+            msg = f"No tickers in '{name}'."
+            msg += f" Add with: caracal watchlist add {name} <ticker>"
+            hint.update(msg)
             hint.display = True
             return
 

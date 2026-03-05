@@ -128,7 +128,11 @@ class DataService:
         ohlcv_rows = []
         for _, row in tail.iterrows():
             ohlcv_rows.append({
-                "date": str(row["date"].date()) if hasattr(row["date"], "date") else str(row["date"]),
+                "date": (
+                    str(row["date"].date())
+                    if hasattr(row["date"], "date")
+                    else str(row["date"])
+                ),
                 "open": round(float(row["open"]), PRICE_DECIMALS),
                 "high": round(float(row["high"]), PRICE_DECIMALS),
                 "low": round(float(row["low"]), PRICE_DECIMALS),

@@ -1,7 +1,7 @@
 """Tests for StockDetailScreen."""
 
-import pytest
 import pandas as pd
+import pytest
 
 from caracal.config import CaracalConfig
 from caracal.storage.duckdb import DuckDBStorage

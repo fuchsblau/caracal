@@ -1,7 +1,7 @@
 """End-to-end TUI integration tests."""
 
-import pytest
 import pandas as pd
+import pytest
 
 from caracal.config import CaracalConfig
 from caracal.storage.duckdb import DuckDBStorage
@@ -44,8 +44,8 @@ class TestFullNavigation:
     async def test_watchlist_to_detail_and_back(self, full_app):
         """SC-003 criteria 1-4: start, show data, enter detail, esc back."""
         async with full_app.run_test() as pilot:
-            from caracal.tui.screens.watchlist import WatchlistScreen
             from caracal.tui.screens.stock_detail import StockDetailScreen
+            from caracal.tui.screens.watchlist import WatchlistScreen
 
             # Criterion 1: TUI starts with WatchlistScreen
             assert isinstance(full_app.screen, WatchlistScreen)

@@ -81,6 +81,6 @@ class StockDetailScreen(Screen):
 
         if not detail["ohlcv"]:
             ohlcv_table.display = False
-            self.query_one("#detail-header", Static).update(
-                f"[bold]{self.ticker}[/]  No data. Run 'caracal fetch {self.ticker}' first."
-            )
+            msg = f"[bold]{self.ticker}[/]  No data."
+            msg += f" Run 'caracal fetch {self.ticker}' first."
+            self.query_one("#detail-header", Static).update(msg)

@@ -48,7 +48,7 @@ def app_with_data(config, storage):
 class TestWatchlistScreen:
     @pytest.mark.asyncio
     async def test_shows_watchlist_data(self, app_with_data):
-        async with app_with_data.run_test() as pilot:
+        async with app_with_data.run_test():
             # The DataTable should show tickers
             from textual.widgets import DataTable
             table = app_with_data.screen.query_one(DataTable)
@@ -61,7 +61,7 @@ class TestWatchlistScreen:
         data_service = DataService(config, storage=storage)
         app = CaracalApp(config=config, data_service=data_service)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             # Should show hint text, not crash
             assert app.screen is not None
 
@@ -71,7 +71,7 @@ class TestWatchlistScreen:
         data_service = DataService(config, storage=storage)
         app = CaracalApp(config=config, data_service=data_service)
 
-        async with app.run_test() as pilot:
+        async with app.run_test():
             assert app.screen is not None
 
     @pytest.mark.asyncio

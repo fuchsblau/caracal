@@ -23,5 +23,5 @@ class TestCaracalApp:
         from caracal.tui import CaracalApp
 
         app = CaracalApp(config=config)
-        async with app.run_test() as pilot:
+        async with app.run_test():
             assert app.screen is not None

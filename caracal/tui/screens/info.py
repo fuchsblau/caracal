@@ -57,5 +57,8 @@ class InfoScreen(ModalScreen):
             yield Static("Caracal", id="info-title")
             yield Static(f"[bold]Version:[/]  {info['version']}", classes="info-row")
             yield Static(f"[bold]Provider:[/] {info['provider']}", classes="info-row")
-            yield Static(f"[bold]Config:[/]   {info['config_path']}", classes="info-row")
+            yield Static(
+                f"[bold]Config:[/]   {info['config_path']}",
+                classes="info-row",
+            )
             yield Static(f"[bold]Database:[/] {info['db_path']}", classes="info-row")

@@ -47,6 +47,15 @@ line-length = 88
 [tool.ruff.lint]
 select = ["E", "F", "I", "N", "W", "UP"]
 
+[tool.coverage.run]
+source = ["caracal"]
+branch = true
+relative_files = true
+
+[tool.coverage.report]
+show_missing = true
+skip_empty = true
+
 [project.optional-dependencies]
 yahoo = ["yfinance>=0.2"]
 massive = ["massive>=0.1"]

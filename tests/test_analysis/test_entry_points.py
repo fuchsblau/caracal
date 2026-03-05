@@ -52,3 +52,13 @@ def test_insufficient_data():
     result = calculate_entry_signal(df)
     assert result["signal"] == "hold"
     assert result["confidence"] == 0.0
+
+
+def test_confidence_rounded_to_two_decimals(bullish_data):
+    """Confidence should be rounded to 2 decimal places."""
+    result = calculate_entry_signal(bullish_data)
+    confidence_str = str(result["confidence"])
+    # Should have at most 2 decimal places
+    if "." in confidence_str:
+        decimals = len(confidence_str.split(".")[1])
+        assert decimals <= 2, f"Confidence has {decimals} decimals: {result['confidence']}"

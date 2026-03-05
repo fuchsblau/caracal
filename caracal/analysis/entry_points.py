@@ -5,6 +5,7 @@ from typing import Any
 import pandas as pd
 
 from caracal.indicators.bollinger import BollingerIndicator
+from caracal.output.precision import PERCENT_DECIMALS
 from caracal.indicators.ema import EMAIndicator
 from caracal.indicators.macd import MACDIndicator
 from caracal.indicators.rsi import RSIIndicator
@@ -84,7 +85,7 @@ def calculate_entry_signal(df: pd.DataFrame) -> dict[str, Any]:
 
     return {
         "signal": signal,
-        "confidence": round(confidence, 4),
+        "confidence": round(confidence, PERCENT_DECIMALS),
         "indicators": indicators,
     }
 

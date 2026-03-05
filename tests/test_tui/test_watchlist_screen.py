@@ -233,6 +233,21 @@ class TestRemoveTicker:
             assert isinstance(app_empty_watchlist.screen, WatchlistScreen)
 
 
+class TestSubTitleEnhanced:
+    @pytest.mark.asyncio
+    async def test_sub_title_contains_provider(self, app_with_data):
+        async with app_with_data.run_test() as pilot:
+            screen = app_with_data.screen
+            assert "yahoo" in screen.sub_title
+
+    @pytest.mark.asyncio
+    async def test_sub_title_contains_time(self, app_with_data):
+        async with app_with_data.run_test() as pilot:
+            import re
+            screen = app_with_data.screen
+            assert re.search(r"\d{2}:\d{2}", screen.sub_title)
+
+
 class TestRichTextStyling:
     """Tests for semantic color coding in watchlist table cells."""
 

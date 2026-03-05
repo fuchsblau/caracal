@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from datetime import datetime
 from typing import TYPE_CHECKING
 
 from rich.text import Text
@@ -80,7 +81,9 @@ class WatchlistScreen(Screen):
 
         total = len(self._watchlist_names)
         idx = self._current_index + 1
-        self.sub_title = f"{name} ({idx}/{total})"
+        provider = self.data_service.config.default_provider
+        now = datetime.now().strftime("%H:%M")
+        self.sub_title = f"{name} ({idx}/{total}) \u00b7 {provider} \u00b7 {now}"
         table = self.query_one("#watchlist-table", DataTable)
         table.clear()
         hint = self.query_one("#empty-hint", Static)

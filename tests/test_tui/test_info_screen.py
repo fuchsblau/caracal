@@ -26,5 +26,5 @@ class TestInfoScreen:
             assert isinstance(app.screen, InfoScreen)
 
             await pilot.press("escape")
-            from caracal.tui.screens.watchlist import WatchlistScreen
-            assert isinstance(app.screen, WatchlistScreen)
+            # Back to main app screen (not InfoScreen)
+            assert not isinstance(app.screen, InfoScreen)

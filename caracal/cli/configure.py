@@ -32,6 +32,31 @@ _PROVIDER_DEFAULTS = {
 }
 
 
+def _prompt_provider_settings(
+    settings: list[tuple[str, str, bool]],
+    current_cfg: dict,
+    provider_name: str,
+) -> dict:
+    provider_cfg = dict(current_cfg)
+    defaults = _PROVIDER_DEFAULTS.get(provider_name, {})
+    for key, label, is_secret in settings:
+        existing = provider_cfg.get(key, defaults.get(key, ""))
+        value = _prompt_setting(label, existing, is_secret)
+        if value:
+            provider_cfg[key] = value
+    return provider_cfg
+
+
+def _prompt_setting(label: str, existing: str, is_secret: bool) -> str:
+    if is_secret and existing:
+        display = mask_secret(existing)
+        value = click.prompt(
+            f"    {label} (current: {display})", default="", show_default=False
+        )
+        return value or existing
+    return click.prompt(f"    {label}", default=existing or "")
+
+
 @click.command()
 @click.pass_context
 def configure(ctx: click.Context) -> None:
@@ -57,26 +82,9 @@ def configure(ctx: click.Context) -> None:
             default=provider_name in providers,
         ):
             continue
-
-        provider_cfg = dict(providers.get(provider_name, {}))
-        defaults = _PROVIDER_DEFAULTS.get(provider_name, {})
-
-        for key, label, is_secret in settings:
-            existing = provider_cfg.get(key, defaults.get(key, ""))
-            if is_secret and existing:
-                display = mask_secret(existing)
-                value = click.prompt(
-                    f"    {label} (current: {display})",
-                    default="",
-                    show_default=False,
-                )
-                if not value:
-                    value = existing
-            else:
-                value = click.prompt(f"    {label}", default=existing or "")
-            if value:
-                provider_cfg[key] = value
-        providers[provider_name] = provider_cfg
+        providers[provider_name] = _prompt_provider_settings(
+            settings, providers.get(provider_name, {}), provider_name
+        )
 
     new_config = CaracalConfig(
         db_path=db_path,

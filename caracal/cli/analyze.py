@@ -42,41 +42,12 @@ def analyze(ctx: click.Context, ticker: str) -> None:
     try:
         df = storage.get_ohlcv(ticker)
         if df.empty:
-            if output_format == "json":
-                click.echo(
-                    json_out.format_error(
-                        "NO_DATA", f"No data found for {ticker}", meta
-                    )
-                )
-            else:
-                click.echo(
-                    human_out.format_error_message(
-                        f"No data for {ticker}. Run 'caracal fetch {ticker}' first."
-                    )
-                )
+            _output_no_data(output_format, ticker, meta)
             ctx.exit(2)
             return
 
-        results = {}
-        indicator_rows: list[dict] = []
-        for ind in INDICATORS:
-            value = ind.calculate(df)
-            if isinstance(value, pd.DataFrame):
-                for col in value.columns:
-                    col_name = f"{ind.name}_{col}"
-                    results[col_name] = _to_json_safe(value[col].iloc[-1])
-                    for dt, val in zip(df["date"], value[col]):
-                        indicator_rows.append(
-                            {"date": dt, "name": col_name, "value": _to_json_safe(val)}
-                        )
-            else:
-                results[ind.name] = _to_json_safe(value.iloc[-1])
-                for dt, val in zip(df["date"], value):
-                    indicator_rows.append(
-                        {"date": dt, "name": ind.name, "value": _to_json_safe(val)}
-                    )
+        results, indicator_rows = _compute_indicators(df)
 
-        # Persist indicators
         if indicator_rows:
             ind_df = pd.DataFrame(indicator_rows)
             storage.store_indicators(ticker, ind_df)
@@ -87,6 +58,49 @@ def analyze(ctx: click.Context, ticker: str) -> None:
             click.echo(human_out.format_indicators_dict(results, ticker))
     finally:
         storage.close()
+
+
+def _output_no_data(fmt: str, ticker: str, meta: dict) -> None:
+    if fmt == "json":
+        click.echo(
+            json_out.format_error("NO_DATA", f"No data found for {ticker}", meta)
+        )
+    else:
+        click.echo(
+            human_out.format_error_message(
+                f"No data for {ticker}. Run 'caracal fetch {ticker}' first."
+            )
+        )
+
+
+def _compute_indicators(df: pd.DataFrame) -> tuple[dict, list[dict]]:
+    results: dict = {}
+    rows: list[dict] = []
+    for ind in INDICATORS:
+        value = ind.calculate(df)
+        if isinstance(value, pd.DataFrame):
+            _collect_dataframe_indicator(results, rows, df, ind.name, value)
+        else:
+            _collect_series_indicator(results, rows, df, ind.name, value)
+    return results, rows
+
+
+def _collect_dataframe_indicator(
+    results: dict, rows: list[dict], df: pd.DataFrame, name: str, value: pd.DataFrame
+) -> None:
+    for col in value.columns:
+        col_name = f"{name}_{col}"
+        results[col_name] = _to_json_safe(value[col].iloc[-1])
+        for dt, val in zip(df["date"], value[col]):
+            rows.append({"date": dt, "name": col_name, "value": _to_json_safe(val)})
+
+
+def _collect_series_indicator(
+    results: dict, rows: list[dict], df: pd.DataFrame, name: str, value: pd.Series
+) -> None:
+    results[name] = _to_json_safe(value.iloc[-1])
+    for dt, val in zip(df["date"], value):
+        rows.append({"date": dt, "name": name, "value": _to_json_safe(val)})
 
 
 def _to_json_safe(val):

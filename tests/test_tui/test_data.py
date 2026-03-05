@@ -3,7 +3,7 @@
 import pytest
 
 from caracal.config import CaracalConfig
-from caracal.storage.duckdb import DuckDBStorage
+from caracal.storage.duckdb import DuckDBStorage, StorageError
 from caracal.tui.data import DataService
 
 
@@ -24,6 +24,14 @@ def data_service(storage, config):
     svc = DataService(config, storage=storage)
     yield svc
     svc.close()
+
+
+@pytest.fixture
+def sample_watchlist(storage):
+    """Create a watchlist with one ticker for tests that need existing data."""
+    storage.create_watchlist("sample")
+    storage.add_to_watchlist("sample", "AAPL")
+    return "sample"
 
 
 class TestGetWatchlists:
@@ -137,3 +145,40 @@ class TestGetAppInfo:
         assert "provider" in info
         assert "config_path" in info
         assert "db_path" in info
+
+
+class TestCreateWatchlist:
+    def test_create_watchlist(self, data_service):
+        """DataService.create_watchlist delegates to storage."""
+        data_service.create_watchlist("new_wl")
+        names = data_service.get_watchlist_names()
+        assert "new_wl" in names
+
+    def test_create_watchlist_duplicate_raises(self, data_service):
+        """Duplicate name raises StorageError."""
+        data_service.create_watchlist("dup")
+        with pytest.raises(StorageError):
+            data_service.create_watchlist("dup")
+
+
+class TestDeleteWatchlist:
+    def test_delete_watchlist(self, data_service, sample_watchlist):
+        """DataService.delete_watchlist removes the watchlist."""
+        data_service.delete_watchlist(sample_watchlist)
+        names = data_service.get_watchlist_names()
+        assert sample_watchlist not in names
+
+    def test_delete_watchlist_not_found_raises(self, data_service):
+        """Deleting non-existent watchlist raises StorageError."""
+        with pytest.raises(StorageError):
+            data_service.delete_watchlist("nonexistent")
+
+
+class TestGetWatchlistsDetail:
+    def test_get_watchlists(self, data_service, sample_watchlist):
+        """get_watchlists returns list of dicts with name and ticker_count."""
+        result = data_service.get_watchlists()
+        assert len(result) >= 1
+        wl = next(w for w in result if w["name"] == sample_watchlist)
+        assert "name" in wl
+        assert "ticker_count" in wl

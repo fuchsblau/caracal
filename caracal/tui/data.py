@@ -83,6 +83,18 @@ class DataService:
             "signal": signal,
         }
 
+    def create_watchlist(self, name: str) -> None:
+        """Create a new watchlist. Raises StorageError if name exists."""
+        self._storage.create_watchlist(name)
+
+    def delete_watchlist(self, name: str) -> None:
+        """Delete a watchlist and its items. Raises StorageError if not found."""
+        self._storage.delete_watchlist(name)
+
+    def get_watchlists(self) -> list[dict]:
+        """Return all watchlists with name, created_at, ticker_count."""
+        return self._storage.get_watchlists()
+
     def refresh_watchlist(self, name: str) -> list[dict]:
         """Re-read watchlist data from storage (no provider fetch).
 

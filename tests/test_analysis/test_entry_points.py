@@ -61,4 +61,6 @@ def test_confidence_rounded_to_two_decimals(bullish_data):
     # Should have at most 2 decimal places
     if "." in confidence_str:
         decimals = len(confidence_str.split(".")[1])
-        assert decimals <= 2, f"Confidence has {decimals} decimals: {result['confidence']}"
+        assert decimals <= 2, (
+            f"Confidence has {decimals} decimals: {result['confidence']}"
+        )

@@ -5,11 +5,11 @@ from typing import Any
 import pandas as pd
 
 from caracal.indicators.bollinger import BollingerIndicator
-from caracal.output.precision import PERCENT_DECIMALS
 from caracal.indicators.ema import EMAIndicator
 from caracal.indicators.macd import MACDIndicator
 from caracal.indicators.rsi import RSIIndicator
 from caracal.indicators.sma import SMAIndicator
+from caracal.output.precision import PERCENT_DECIMALS
 
 
 def calculate_entry_signal(df: pd.DataFrame) -> dict[str, Any]:

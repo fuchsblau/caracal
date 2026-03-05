@@ -7,7 +7,12 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from caracal.output.precision import INDICATOR_DECIMALS, PERCENT_DECIMALS, PRICE_DECIMALS, VOLUME_DECIMALS
+from caracal.output.precision import (
+    INDICATOR_DECIMALS,
+    PERCENT_DECIMALS,
+    PRICE_DECIMALS,
+    VOLUME_DECIMALS,
+)
 
 _PRICE_COLUMNS = {"open", "high", "low", "close"}
 
@@ -189,7 +194,11 @@ def format_watchlist_prices(prices: list[dict], watchlist_name: str) -> str:
     for p in prices:
         change = p.get("change")
         change_pct = p.get("change_pct")
-        close_str = f"{p['close']:.{PRICE_DECIMALS}f}" if p.get("close") is not None else "N/A"
+        close_str = (
+            f"{p['close']:.{PRICE_DECIMALS}f}"
+            if p.get("close") is not None
+            else "N/A"
+        )
         if change is not None:
             style = "green" if change >= 0 else "red"
             change_str = Text(f"{change:+.{PRICE_DECIMALS}f}", style=style)

@@ -87,8 +87,8 @@ wheels = [
 ]
 
 [[package]]
-name = "caracal"
-version = "1.1.0"
+name = "caracal-trading"
+version = "1.2.0"
 source = { editable = "." }
 dependencies = [
     { name = "click" },
@@ -123,10 +123,10 @@ yahoo = [
 [package.metadata]
 requires-dist = [
     { name = "bump-my-version", marker = "extra == 'dev'", specifier = ">=0.28" },
-    { name = "caracal", extras = ["ibkr"], marker = "extra == 'all'" },
-    { name = "caracal", extras = ["massive"], marker = "extra == 'all'" },
-    { name = "caracal", extras = ["yahoo"], marker = "extra == 'all'" },
-    { name = "caracal", extras = ["yahoo"], marker = "extra == 'dev'" },
+    { name = "caracal-trading", extras = ["ibkr"], marker = "extra == 'all'" },
+    { name = "caracal-trading", extras = ["massive"], marker = "extra == 'all'" },
+    { name = "caracal-trading", extras = ["yahoo"], marker = "extra == 'all'" },
+    { name = "caracal-trading", extras = ["yahoo"], marker = "extra == 'dev'" },
     { name = "click", specifier = ">=8.1" },
     { name = "duckdb", specifier = ">=1.0" },
     { name = "ib-async", marker = "extra == 'ibkr'", specifier = ">=2.0" },

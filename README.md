@@ -8,12 +8,16 @@
 
 **Stock market analysis from your terminal — local, fast, automatable.**
 
+[![CI](https://github.com/fuchsblau/caracal/actions/workflows/ci.yml/badge.svg)](https://github.com/fuchsblau/caracal/actions/workflows/ci.yml)
+[![PyPI](https://img.shields.io/pypi/v/caracal-trading)](https://pypi.org/project/caracal-trading/)
+[![Quality Gate](https://sonarcloud.io/api/project_badges/measure?project=fuchsblau_caracal&metric=alert_status)](https://sonarcloud.io/summary/new_code?id=fuchsblau_caracal)
+[![Coverage](https://sonarcloud.io/api/project_badges/measure?project=fuchsblau_caracal&metric=coverage)](https://sonarcloud.io/summary/new_code?id=fuchsblau_caracal)
 [![Python 3.12+](https://img.shields.io/badge/python-3.12+-blue.svg)](https://www.python.org/downloads/)
 [![License: MIT](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 Caracal fetches market data, calculates technical indicators, and gives you entry point recommendations — all from the command line. Your data stays on your machine.
 
-> **v1.2.0** — Multi-provider support. Fetch data from Yahoo Finance, Massive.com, or Interactive Brokers. All providers are optional — install only what you need.
+> **v1.2.1** — Standardized numeric precision (2 decimal places), SonarCloud integration, CI coverage reporting.
 
 ## Disclaimer
 
@@ -47,15 +51,15 @@ caracal entry AAPL
 
 ```
 $ caracal entry AAPL
-AAPL: BUY (confidence: 72%)
-  sma_20: 178.3400
-  sma_50: 175.1200
-  ema_12: 179.0500
-  rsi_14: 38.2100
-  macd: 1.2300
-  macd_signal: 0.9800
-  bollinger_upper: 185.4200
-  bollinger_lower: 170.8600
+AAPL: BUY (confidence: 72.00%)
+  sma_20: 178.34
+  sma_50: 175.12
+  ema_12: 179.05
+  rsi_14: 38.21
+  macd: 1.23
+  macd_signal: 0.98
+  bollinger_upper: 185.42
+  bollinger_lower: 170.86
 ```
 
 ```

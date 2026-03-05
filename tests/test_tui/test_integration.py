@@ -103,6 +103,52 @@ class TestFullNavigation:
             assert isinstance(full_app.screen, WatchlistSelectorModal)
 
     @pytest.mark.asyncio
+    async def test_full_watchlist_management_flow(self, full_app):
+        """Create watchlist, switch to it, delete it — full lifecycle."""
+        async with full_app.run_test() as pilot:
+            from caracal.tui.screens.watchlist import WatchlistScreen
+
+            screen = full_app.screen
+            assert isinstance(screen, WatchlistScreen)
+
+            # Initial state: first watchlist alphabetically ("etfs")
+            initial_watchlist = screen.current_watchlist
+            initial_count = len(screen._watchlist_names)
+            assert initial_watchlist is not None
+
+            # Step 1: Create a new watchlist via 'c' key
+            await pilot.press("c")
+            input_widget = full_app.screen.query_one("#create-input")
+            input_widget.value = "integration_test"
+            await pilot.press("enter")
+            await pilot.pause()
+
+            # Should be back on WatchlistScreen, switched to new watchlist
+            assert isinstance(full_app.screen, WatchlistScreen)
+            assert full_app.screen.current_watchlist == "integration_test"
+            assert len(full_app.screen._watchlist_names) == initial_count + 1
+
+            # Step 2: Switch back to original via 'w' key (selector)
+            await pilot.press("w")
+            await pilot.press("enter")  # Select first item in list
+            await pilot.pause()
+
+            assert isinstance(full_app.screen, WatchlistScreen)
+            # After selecting, we're on a different watchlist
+            switched_to = full_app.screen.current_watchlist
+            assert switched_to is not None
+
+            # Step 3: Delete current watchlist via 'd' key
+            current_before_delete = full_app.screen.current_watchlist
+            await pilot.press("d")
+            await pilot.click("#confirm-btn")
+            await pilot.pause()
+
+            assert isinstance(full_app.screen, WatchlistScreen)
+            assert current_before_delete not in full_app.screen._watchlist_names
+            assert len(full_app.screen._watchlist_names) == initial_count
+
+    @pytest.mark.asyncio
     async def test_quit(self, full_app):
         """q quits the app."""
         async with full_app.run_test() as pilot:

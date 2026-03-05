@@ -174,6 +174,41 @@ class TestDeleteWatchlist:
             data_service.delete_watchlist("nonexistent")
 
 
+class TestAddToWatchlist:
+    def test_add_single_ticker(self, data_service, sample_watchlist):
+        """Adding a single ticker returns it in added list."""
+        added, duplicates = data_service.add_to_watchlist("sample", ["MSFT"])
+        assert added == ["MSFT"]
+        assert duplicates == []
+
+    def test_add_batch_tickers(self, data_service, sample_watchlist):
+        """Adding multiple tickers returns all in added list."""
+        added, duplicates = data_service.add_to_watchlist(
+            "sample", ["MSFT", "NVDA", "GOOG"]
+        )
+        assert added == ["MSFT", "NVDA", "GOOG"]
+        assert duplicates == []
+
+    def test_add_duplicate_ticker(self, data_service, sample_watchlist):
+        """Adding existing ticker AAPL returns it as duplicate."""
+        added, duplicates = data_service.add_to_watchlist("sample", ["AAPL"])
+        assert added == []
+        assert duplicates == ["AAPL"]
+
+    def test_add_mixed_batch(self, data_service, sample_watchlist):
+        """Batch with mix of new and existing tickers splits correctly."""
+        added, duplicates = data_service.add_to_watchlist(
+            "sample", ["AAPL", "MSFT", "AAPL"]
+        )
+        assert added == ["MSFT"]
+        assert duplicates == ["AAPL", "AAPL"]
+
+    def test_add_to_nonexistent_watchlist_raises(self, data_service):
+        """Adding to non-existent watchlist raises StorageError."""
+        with pytest.raises(StorageError):
+            data_service.add_to_watchlist("nope", ["AAPL"])
+
+
 class TestGetWatchlistsDetail:
     def test_get_watchlists(self, data_service, sample_watchlist):
         """get_watchlists returns list of dicts with name and ticker_count."""

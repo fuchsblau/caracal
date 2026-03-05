@@ -102,6 +102,25 @@ class DataService:
         """
         return self.get_watchlist_overview(name)
 
+    def add_to_watchlist(
+        self, name: str, tickers: list[str]
+    ) -> tuple[list[str], list[str]]:
+        """Add tickers to a watchlist. Returns (added, duplicates).
+
+        Raises StorageError if watchlist does not exist.
+        """
+        existing = set(self._storage.get_watchlist_items(name))
+        added: list[str] = []
+        duplicates: list[str] = []
+        for ticker in tickers:
+            if ticker in existing:
+                duplicates.append(ticker)
+            else:
+                self._storage.add_to_watchlist(name, ticker)
+                added.append(ticker)
+                existing.add(ticker)
+        return added, duplicates
+
     # -- Stock detail ---------------------------------------------------------
 
     def get_stock_detail(self, ticker: str) -> dict:

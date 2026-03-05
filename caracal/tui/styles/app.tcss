@@ -1,4 +1,4 @@
-/* Caracal TUI Theme */
+/* Caracal TUI Theme — Cyan Primary */
 
 Screen {
     background: $surface;
@@ -6,8 +6,51 @@ Screen {
 
 Header {
     dock: top;
+    background: #00bcd4;
+    color: #ffffff;
 }
 
 Footer {
     dock: bottom;
+}
+
+#watchlist-table {
+    height: 1fr;
+}
+
+DataTable > .datatable--cursor {
+    background: #00bcd4 30%;
+}
+
+DataTable > .datatable--header {
+    background: $surface-darken-1;
+    text-style: bold;
+}
+
+#empty-hint {
+    width: 100%;
+    height: auto;
+    content-align: center middle;
+    padding: 2 4;
+    color: $text-muted;
+}
+
+.signal-buy {
+    color: #4caf50;
+}
+
+.signal-sell {
+    color: #f44336;
+}
+
+.signal-hold {
+    color: #ffc107;
+}
+
+.change-positive {
+    color: #4caf50;
+}
+
+.change-negative {
+    color: #f44336;
 }

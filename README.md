@@ -36,7 +36,7 @@ The authors and contributors of Caracal assume no responsibility for any losses 
 ## Quickstart
 
 ```bash
-pip install caracal[all]
+pip install caracal-trading[all]
 caracal init
 caracal fetch AAPL
 caracal analyze AAPL
@@ -181,15 +181,15 @@ caracal watchlist delete tech
 Install with all providers:
 
 ```bash
-pip install caracal[all]
+pip install caracal-trading[all]
 ```
 
 Or pick only the providers you need:
 
 ```bash
-pip install caracal[yahoo]     # Yahoo Finance (default, no API key needed)
-pip install caracal[massive]   # Massive.com (requires API key)
-pip install caracal[ibkr]      # Interactive Brokers (requires TWS/Gateway)
+pip install caracal-trading[yahoo]     # Yahoo Finance (default, no API key needed)
+pip install caracal-trading[massive]   # Massive.com (requires API key)
+pip install caracal-trading[ibkr]      # Interactive Brokers (requires TWS/Gateway)
 ```
 
 ### Data Providers

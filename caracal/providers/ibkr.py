@@ -11,7 +11,7 @@ try:
 except ImportError:
     raise ImportError(
         "IBKR provider requires the 'ib_async' package. "
-        "Install with: pip install caracal[ibkr]"
+        "Install with: pip install caracal-trading[ibkr]"
     ) from None
 
 

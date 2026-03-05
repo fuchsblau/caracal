@@ -11,7 +11,7 @@ try:
 except ImportError:
     raise ImportError(
         "Massive.com provider requires the 'massive' package. "
-        "Install with: pip install caracal[massive]"
+        "Install with: pip install caracal-trading[massive]"
     ) from None
 
 

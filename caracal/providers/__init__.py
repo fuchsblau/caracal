@@ -56,7 +56,7 @@ def get_provider(name: str = "yahoo", **kwargs) -> MarketDataProvider:
     except ImportError:
         raise ImportError(
             f"Provider '{name}' requires extra dependencies. "
-            f"Install with: pip install caracal[{name}]"
+            f"Install with: pip install caracal-trading[{name}]"
         ) from None
 
     cls = getattr(module, class_name)

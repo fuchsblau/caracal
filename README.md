@@ -17,7 +17,7 @@
 
 Caracal fetches market data, calculates technical indicators, and gives you entry point recommendations — all from the command line. Your data stays on your machine.
 
-> **v1.2.1** — Standardized numeric precision (2 decimal places), SonarCloud integration, CI coverage reporting.
+> **v1.3.0** — New: Terminal UI (`caracal tui`) — interactive watchlist, stock details, keyboard-driven navigation.
 
 ## Disclaimer
 
@@ -29,6 +29,7 @@ The authors and contributors of Caracal assume no responsibility for any losses 
 
 ## Features
 
+- **Terminal UI** — Interactive TUI with watchlist overview, stock details, indicators, and keyboard-driven navigation. Cyan-themed, vim-style keys.
 - **Multiple data providers** — Yahoo Finance (default), Massive.com, Interactive Brokers. Install only what you need.
 - **Fetch market data** — Pull OHLCV data with delta-fetch — only downloads what's new.
 - **Technical indicators** — SMA, EMA, RSI, MACD, Bollinger Bands — calculated locally, no external service needed.
@@ -45,6 +46,7 @@ caracal init
 caracal fetch AAPL
 caracal analyze AAPL
 caracal entry AAPL
+caracal tui              # launch the interactive terminal UI
 ```
 
 ## Example Output
@@ -176,6 +178,34 @@ caracal watchlist remove tech MSFT
 caracal watchlist delete tech
 ```
 
+### Terminal UI
+
+Launch the interactive TUI:
+
+```bash
+caracal tui
+```
+
+The TUI requires the `tui` extra (`pip install caracal-trading[tui]` or included in `[all]`).
+
+**Keyboard shortcuts:**
+
+| Key | Action |
+|-----|--------|
+| `j` / `k` | Move cursor down / up |
+| `Enter` | Open stock detail |
+| `Escape` | Go back |
+| `w` | Cycle through watchlists |
+| `r` | Refresh data |
+| `i` | Show app info |
+| `q` | Quit |
+
+**Screens:**
+
+- **Watchlist** — Overview table with Symbol, Price, Change%, and Signal for each ticker.
+- **Stock Detail** — Indicators (SMA, EMA, RSI, MACD, Bollinger) and recent OHLCV data for a single ticker.
+- **Info** — Version, active provider, config and database paths.
+
 ## Requirements
 
 - Python 3.12+
@@ -188,12 +218,13 @@ Install with all providers:
 pip install caracal-trading[all]
 ```
 
-Or pick only the providers you need:
+Or pick only what you need:
 
 ```bash
 pip install caracal-trading[yahoo]     # Yahoo Finance (default, no API key needed)
 pip install caracal-trading[massive]   # Massive.com (requires API key)
 pip install caracal-trading[ibkr]      # Interactive Brokers (requires TWS/Gateway)
+pip install caracal-trading[tui]       # Terminal UI (Textual)
 ```
 
 ### Data Providers
@@ -238,6 +269,7 @@ Caracal follows a modular architecture with six core packages:
 | Package | Purpose |
 |---------|---------|
 | `cli` | Click-based command interface |
+| `tui` | Textual-based terminal UI (optional) |
 | `config` | TOML-based configuration management |
 | `providers` | Market data source abstraction (Yahoo, Massive, IBKR) |
 | `storage` | DuckDB-based local persistence |

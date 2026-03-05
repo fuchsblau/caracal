@@ -10,15 +10,21 @@ from textual.containers import VerticalScroll
 from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Static
 
-from caracal.tui.theme import COLOR_MUTED, COLOR_PRICE
+from caracal.tui.theme import (
+    COLOR_MUTED,
+    COLOR_NEGATIVE,
+    COLOR_POSITIVE,
+    COLOR_PRICE,
+    SIGNAL_COLORS,
+)
 
 if TYPE_CHECKING:
     from caracal.tui.data import DataService
 
 SIGNAL_STYLES = {
-    "buy": "[bold #4caf50]BUY[/]",
-    "sell": "[bold #f44336]SELL[/]",
-    "hold": "[bold #ffc107]HOLD[/]",
+    "buy": f"[bold {COLOR_POSITIVE}]BUY[/]",
+    "sell": f"[bold {COLOR_NEGATIVE}]SELL[/]",
+    "hold": f"[bold {SIGNAL_COLORS['hold']}]HOLD[/]",
 }
 
 

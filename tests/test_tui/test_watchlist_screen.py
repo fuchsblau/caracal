@@ -1,5 +1,7 @@
 """Tests for WatchlistScreen."""
 
+import re
+
 import pytest
 from rich.text import Text
 
@@ -171,7 +173,7 @@ class TestWatchlistManagement:
 
     @pytest.mark.asyncio
     async def test_header_shows_index(self, app_with_two_watchlists):
-        async with app_with_two_watchlists.run_test() as pilot:
+        async with app_with_two_watchlists.run_test():
             screen = app_with_two_watchlists.screen
             assert "(" in screen.sub_title
             assert "/" in screen.sub_title
@@ -236,14 +238,13 @@ class TestRemoveTicker:
 class TestSubTitleEnhanced:
     @pytest.mark.asyncio
     async def test_sub_title_contains_provider(self, app_with_data):
-        async with app_with_data.run_test() as pilot:
+        async with app_with_data.run_test():
             screen = app_with_data.screen
             assert "yahoo" in screen.sub_title
 
     @pytest.mark.asyncio
     async def test_sub_title_contains_time(self, app_with_data):
-        async with app_with_data.run_test() as pilot:
-            import re
+        async with app_with_data.run_test():
             screen = app_with_data.screen
             assert re.search(r"\d{2}:\d{2}", screen.sub_title)
 
@@ -253,7 +254,7 @@ class TestRichTextStyling:
 
     @pytest.mark.asyncio
     async def test_price_cell_is_rich_text_right_aligned(self, app_with_data):
-        async with app_with_data.run_test() as pilot:
+        async with app_with_data.run_test():
             from textual.coordinate import Coordinate
 
             table = app_with_data.screen.query_one("#watchlist-table")
@@ -263,7 +264,7 @@ class TestRichTextStyling:
 
     @pytest.mark.asyncio
     async def test_positive_change_is_rich_text(self, app_with_data):
-        async with app_with_data.run_test() as pilot:
+        async with app_with_data.run_test():
             from textual.coordinate import Coordinate
 
             table = app_with_data.screen.query_one("#watchlist-table")
@@ -272,7 +273,7 @@ class TestRichTextStyling:
 
     @pytest.mark.asyncio
     async def test_signal_cell_is_uppercase_rich_text(self, app_with_data):
-        async with app_with_data.run_test() as pilot:
+        async with app_with_data.run_test():
             from textual.coordinate import Coordinate
 
             table = app_with_data.screen.query_one("#watchlist-table")
@@ -282,7 +283,7 @@ class TestRichTextStyling:
 
     @pytest.mark.asyncio
     async def test_na_cell_is_rich_text(self, app_empty_watchlist):
-        async with app_empty_watchlist.run_test() as pilot:
+        async with app_empty_watchlist.run_test():
             from textual.coordinate import Coordinate
 
             table = app_empty_watchlist.screen.query_one("#watchlist-table")

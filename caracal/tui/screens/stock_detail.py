@@ -10,11 +10,10 @@ from textual.containers import VerticalScroll
 from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Static
 
+from caracal.tui.theme import COLOR_MUTED, COLOR_PRICE
+
 if TYPE_CHECKING:
     from caracal.tui.data import DataService
-
-COLOR_PRICE = "cyan"
-COLOR_MUTED = "dim"
 
 SIGNAL_STYLES = {
     "buy": "[bold #4caf50]BUY[/]",

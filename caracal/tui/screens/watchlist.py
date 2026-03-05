@@ -12,16 +12,13 @@ from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Static
 
 from caracal.storage.duckdb import StorageError
-
-COLOR_PRICE = "cyan"
-COLOR_POSITIVE = "#4caf50"
-COLOR_NEGATIVE = "#f44336"
-COLOR_MUTED = "dim"
-SIGNAL_COLORS = {
-    "buy": "#4caf50",
-    "sell": "#f44336",
-    "hold": "#ffc107",
-}
+from caracal.tui.theme import (
+    COLOR_MUTED,
+    COLOR_NEGATIVE,
+    COLOR_POSITIVE,
+    COLOR_PRICE,
+    SIGNAL_COLORS,
+)
 
 if TYPE_CHECKING:
     from caracal.tui.data import DataService

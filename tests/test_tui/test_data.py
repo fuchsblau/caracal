@@ -209,6 +209,24 @@ class TestAddToWatchlist:
             data_service.add_to_watchlist("nope", ["AAPL"])
 
 
+class TestRemoveFromWatchlist:
+    def test_remove_ticker(self, data_service, sample_watchlist):
+        """Removing a ticker removes it from the watchlist."""
+        data_service.remove_from_watchlist("sample", "AAPL")
+        overview = data_service.get_watchlist_overview("sample")
+        assert not any(r["ticker"] == "AAPL" for r in overview)
+
+    def test_remove_nonexistent_ticker_raises(self, data_service, sample_watchlist):
+        """Removing a ticker not in the watchlist raises StorageError."""
+        with pytest.raises(StorageError):
+            data_service.remove_from_watchlist("sample", "NOPE")
+
+    def test_remove_from_nonexistent_watchlist_raises(self, data_service):
+        """Removing from non-existent watchlist raises StorageError."""
+        with pytest.raises(StorageError):
+            data_service.remove_from_watchlist("nope", "AAPL")
+
+
 class TestGetWatchlistsDetail:
     def test_get_watchlists(self, data_service, sample_watchlist):
         """get_watchlists returns list of dicts with name and ticker_count."""

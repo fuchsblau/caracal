@@ -121,6 +121,13 @@ class DataService:
                 existing.add(ticker)
         return added, duplicates
 
+    def remove_from_watchlist(self, name: str, ticker: str) -> None:
+        """Remove a ticker from a watchlist.
+
+        Raises StorageError if watchlist or ticker not found.
+        """
+        self._storage.remove_from_watchlist(name, ticker)
+
     # -- Stock detail ---------------------------------------------------------
 
     def get_stock_detail(self, ticker: str) -> dict:

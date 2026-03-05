@@ -2,7 +2,7 @@ from datetime import date
 
 import pandas as pd
 
-from caracal.output.human import format_error_message, format_ohlcv_table
+from caracal.output.human import _color_value, format_error_message, format_ohlcv_table
 
 
 def test_format_ohlcv_table():
@@ -47,3 +47,14 @@ def test_format_ohlcv_table_price_precision():
 def test_format_error_message():
     output = format_error_message("Ticker not found: XYZ")
     assert "XYZ" in output
+
+
+def test_color_value_uses_two_decimals():
+    """Indicator values should show 2 decimal places, not 4."""
+    result = _color_value("sma_20", 178.3456)
+    assert result.plain == "178.35"
+
+
+def test_color_value_rsi_two_decimals():
+    result = _color_value("rsi_14", 38.2199)
+    assert result.plain == "38.22"

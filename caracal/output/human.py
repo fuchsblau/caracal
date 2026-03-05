@@ -7,7 +7,7 @@ from rich.console import Console
 from rich.table import Table
 from rich.text import Text
 
-from caracal.output.precision import PRICE_DECIMALS, VOLUME_DECIMALS
+from caracal.output.precision import INDICATOR_DECIMALS, PRICE_DECIMALS, VOLUME_DECIMALS
 
 _PRICE_COLUMNS = {"open", "high", "low", "close"}
 
@@ -204,7 +204,7 @@ def format_watchlist_prices(prices: list[dict], watchlist_name: str) -> str:
 
 def _color_value(name: str, val: float) -> Text:
     """Apply color based on indicator semantics."""
-    formatted = f"{val:.4f}"
+    formatted = f"{val:.{INDICATOR_DECIMALS}f}"
 
     if "rsi" in name:
         if val > 70:

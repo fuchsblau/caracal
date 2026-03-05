@@ -45,6 +45,37 @@ def app_with_data(config, storage):
     return app
 
 
+@pytest.fixture
+def app_with_two_watchlists(config, storage):
+    """App with two watchlists for testing switching/deletion."""
+    import pandas as pd
+
+    storage.create_watchlist("alpha")
+    storage.create_watchlist("beta")
+    storage.add_to_watchlist("alpha", "AAPL")
+    storage.add_to_watchlist("beta", "TSLA")
+    for ticker, base in [("AAPL", 150.0), ("TSLA", 250.0)]:
+        df = pd.DataFrame({
+            "date": pd.to_datetime([f"2024-01-{d:02d}" for d in range(1, 32)]),
+            "open": [base + i for i in range(31)],
+            "high": [base + 5 + i for i in range(31)],
+            "low": [base - 1 + i for i in range(31)],
+            "close": [base + 3 + i for i in range(31)],
+            "volume": [1000000 + i * 1000 for i in range(31)],
+        })
+        storage.store_ohlcv(ticker, df)
+    data_service = DataService(config, storage=storage)
+    return CaracalApp(config=config, data_service=data_service)
+
+
+@pytest.fixture
+def app_no_watchlists(config):
+    """App with no watchlists."""
+    storage = DuckDBStorage(":memory:")
+    data_service = DataService(config, storage=storage)
+    return CaracalApp(config=config, data_service=data_service)
+
+
 class TestWatchlistScreen:
     @pytest.mark.asyncio
     async def test_shows_watchlist_data(self, app_with_data):
@@ -78,3 +109,75 @@ class TestWatchlistScreen:
     async def test_quit_with_q(self, app_with_data):
         async with app_with_data.run_test() as pilot:
             await pilot.press("q")
+
+
+class TestWatchlistManagement:
+    @pytest.mark.asyncio
+    async def test_create_watchlist_opens_modal(self, app_with_data):
+        async with app_with_data.run_test() as pilot:
+            await pilot.press("c")
+            from caracal.tui.screens.create_watchlist import CreateWatchlistModal
+
+            assert isinstance(app_with_data.screen, CreateWatchlistModal)
+
+    @pytest.mark.asyncio
+    async def test_create_watchlist_flow(self, app_with_data):
+        async with app_with_data.run_test() as pilot:
+            await pilot.press("c")
+            input_widget = app_with_data.screen.query_one("#create-input")
+            input_widget.value = "new_wl"
+            await pilot.press("enter")
+            await pilot.pause()
+            from caracal.tui.screens.watchlist import WatchlistScreen
+
+            assert isinstance(app_with_data.screen, WatchlistScreen)
+            assert "new_wl" in app_with_data.screen._watchlist_names
+
+    @pytest.mark.asyncio
+    async def test_delete_watchlist_opens_modal(self, app_with_data):
+        async with app_with_data.run_test() as pilot:
+            await pilot.press("d")
+            from caracal.tui.screens.delete_watchlist import DeleteWatchlistModal
+
+            assert isinstance(app_with_data.screen, DeleteWatchlistModal)
+
+    @pytest.mark.asyncio
+    async def test_delete_watchlist_confirm(self, app_with_two_watchlists):
+        async with app_with_two_watchlists.run_test() as pilot:
+            screen = app_with_two_watchlists.screen
+            name = screen.current_watchlist
+            await pilot.press("d")
+            await pilot.click("#confirm-btn")
+            await pilot.pause()
+            assert name not in app_with_two_watchlists.screen._watchlist_names
+
+    @pytest.mark.asyncio
+    async def test_select_watchlist_opens_modal(self, app_with_two_watchlists):
+        async with app_with_two_watchlists.run_test() as pilot:
+            await pilot.press("w")
+            from caracal.tui.screens.watchlist_selector import WatchlistSelectorModal
+
+            assert isinstance(app_with_two_watchlists.screen, WatchlistSelectorModal)
+
+    @pytest.mark.asyncio
+    async def test_header_shows_index(self, app_with_two_watchlists):
+        async with app_with_two_watchlists.run_test() as pilot:
+            screen = app_with_two_watchlists.screen
+            assert "(" in screen.sub_title
+            assert "/" in screen.sub_title
+
+    @pytest.mark.asyncio
+    async def test_delete_on_empty_does_nothing(self, app_no_watchlists):
+        async with app_no_watchlists.run_test() as pilot:
+            await pilot.press("d")
+            from caracal.tui.screens.watchlist import WatchlistScreen
+
+            assert isinstance(app_no_watchlists.screen, WatchlistScreen)
+
+    @pytest.mark.asyncio
+    async def test_select_on_empty_does_nothing(self, app_no_watchlists):
+        async with app_no_watchlists.run_test() as pilot:
+            await pilot.press("w")
+            from caracal.tui.screens.watchlist import WatchlistScreen
+
+            assert isinstance(app_no_watchlists.screen, WatchlistScreen)

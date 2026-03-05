@@ -9,6 +9,8 @@ from textual.binding import Binding
 from textual.screen import Screen
 from textual.widgets import DataTable, Footer, Header, Static
 
+from caracal.storage.duckdb import StorageError
+
 if TYPE_CHECKING:
     from caracal.tui.data import DataService
 
@@ -21,7 +23,9 @@ class WatchlistScreen(Screen):
         Binding("k", "cursor_up", "Up", show=False),
         Binding("enter", "select_row", "Detail"),
         Binding("r", "refresh_data", "Refresh"),
-        Binding("w", "next_watchlist", "Next WL"),
+        Binding("c", "create_watchlist", "Create"),
+        Binding("d", "delete_watchlist", "Delete"),
+        Binding("w", "select_watchlist", "Watchlists"),
     ]
 
     def __init__(self, data_service: DataService) -> None:
@@ -50,7 +54,7 @@ class WatchlistScreen(Screen):
         if not self._watchlist_names:
             table.display = False
             self.query_one("#empty-hint", Static).update(
-                "No watchlists found. Create one with: caracal watchlist create <name>"
+                "No watchlists found. Press c to create one."
             )
             return
 
@@ -61,7 +65,9 @@ class WatchlistScreen(Screen):
         if name is None:
             return
 
-        self.sub_title = name
+        total = len(self._watchlist_names)
+        idx = self._current_index + 1
+        self.sub_title = f"{name} ({idx}/{total})"
         table = self.query_one("#watchlist-table", DataTable)
         table.clear()
         hint = self.query_one("#empty-hint", Static)
@@ -104,11 +110,71 @@ class WatchlistScreen(Screen):
 
         self.app.push_screen(StockDetailScreen(ticker, self.data_service))
 
-    def action_next_watchlist(self) -> None:
-        if len(self._watchlist_names) <= 1:
+    def action_create_watchlist(self) -> None:
+        from caracal.tui.screens.create_watchlist import CreateWatchlistModal
+
+        self.app.push_screen(CreateWatchlistModal(), self._on_create_result)
+
+    def _on_create_result(self, name: str | None) -> None:
+        if name is None:
             return
-        self._current_index = (self._current_index + 1) % len(self._watchlist_names)
+        try:
+            self.data_service.create_watchlist(name)
+        except StorageError as e:
+            self.notify(str(e), severity="error")
+            return
+        self._watchlist_names = self.data_service.get_watchlist_names()
+        self._current_index = self._watchlist_names.index(name)
         self._load_watchlist()
+
+    def action_delete_watchlist(self) -> None:
+        if not self._watchlist_names:
+            return
+        name = self.current_watchlist
+        from caracal.tui.screens.delete_watchlist import DeleteWatchlistModal
+
+        self.app.push_screen(DeleteWatchlistModal(name), self._on_delete_result)
+
+    def _on_delete_result(self, confirmed: bool) -> None:
+        if not confirmed:
+            return
+        name = self.current_watchlist
+        self.data_service.delete_watchlist(name)
+        self._watchlist_names = self.data_service.get_watchlist_names()
+        if self._watchlist_names:
+            self._current_index = min(
+                self._current_index, len(self._watchlist_names) - 1
+            )
+            self._load_watchlist()
+        else:
+            self._current_index = 0
+            self._show_empty_state()
+
+    def action_select_watchlist(self) -> None:
+        if not self._watchlist_names:
+            return
+        watchlists = self.data_service.get_watchlists()
+        current = self.current_watchlist
+        from caracal.tui.screens.watchlist_selector import WatchlistSelectorModal
+
+        self.app.push_screen(
+            WatchlistSelectorModal(watchlists, current), self._on_select_result
+        )
+
+    def _on_select_result(self, name: str | None) -> None:
+        if name is None:
+            return
+        self._current_index = self._watchlist_names.index(name)
+        self._load_watchlist()
+
+    def _show_empty_state(self) -> None:
+        self.sub_title = ""
+        table = self.query_one("#watchlist-table", DataTable)
+        table.clear()
+        table.display = False
+        hint = self.query_one("#empty-hint", Static)
+        hint.update("No watchlists found. Press c to create one.")
+        hint.display = True
 
     def action_refresh_data(self) -> None:
         """Reload data from DuckDB cache."""

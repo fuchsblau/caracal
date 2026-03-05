@@ -91,17 +91,16 @@ class TestFullNavigation:
 
     @pytest.mark.asyncio
     async def test_watchlist_switching(self, full_app):
-        """US-053: Switch between watchlists with w key."""
+        """US-053: Switch between watchlists with w key opens selector."""
         async with full_app.run_test() as pilot:
             from caracal.tui.screens.watchlist import WatchlistScreen
+            from caracal.tui.screens.watchlist_selector import WatchlistSelectorModal
 
             screen = full_app.screen
             assert isinstance(screen, WatchlistScreen)
-            first_wl = screen.current_watchlist
 
             await pilot.press("w")
-            second_wl = screen.current_watchlist
-            assert first_wl != second_wl
+            assert isinstance(full_app.screen, WatchlistSelectorModal)
 
     @pytest.mark.asyncio
     async def test_quit(self, full_app):

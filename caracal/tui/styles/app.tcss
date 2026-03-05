@@ -15,6 +15,15 @@ Footer {
     align-horizontal: right;
 }
 
+/* Main layout */
+#main-layout {
+    height: 1fr;
+}
+
+#watchlist-panel {
+    width: 1fr;
+}
+
 #watchlist-table {
     height: 1fr;
 }

@@ -1,0 +1,13 @@
+/* Caracal TUI Theme */
+
+Screen {
+    background: $surface;
+}
+
+Header {
+    dock: top;
+}
+
+Footer {
+    dock: bottom;
+}

@@ -65,11 +65,15 @@ skip_empty = true
 yahoo = ["yfinance>=0.2"]
 massive = ["massive>=0.1"]
 ibkr = ["ib_async>=2.0"]
-all = ["caracal-trading[yahoo]", "caracal-trading[massive]", "caracal-trading[ibkr]"]
+tui = ["textual>=1.0"]
+all = ["caracal-trading[yahoo]", "caracal-trading[massive]", "caracal-trading[ibkr]", "caracal-trading[tui]"]
 dev = [
     "caracal-trading[yahoo]",
+    "caracal-trading[tui]",
     "pytest>=8.0",
     "pytest-cov>=5.0",
+    "pytest-asyncio>=0.24",
+    "pytest-textual-snapshot>=1.0",
     "hypothesis>=6.0",
     "ruff>=0.4",
     "bump-my-version>=0.28",

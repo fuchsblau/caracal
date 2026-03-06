@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from textual.css.query import NoMatches
 from textual.widget import Widget
-from textual.widgets import TabPane, TabbedContent
+from textual.widgets import DataTable, TabPane, TabbedContent
 
 from caracal.tui.widgets.asset_detail_view import AssetDetailView
 from caracal.tui.widgets.watchlist_table import WatchlistTable
@@ -66,10 +66,13 @@ class WatchlistPanel(Widget):
         detail_view.load_detail(detail)
 
     def hide_detail(self) -> None:
-        """Hide detail view, restore tabs."""
+        """Hide detail view, restore tabs and focus."""
         self._in_detail = False
         self.query_one("#detail-view", AssetDetailView).display = False
         self.query_one("#watchlist-tabs", TabbedContent).display = True
+        table = self.get_active_table()
+        if table:
+            table.query_one(DataTable).focus()
 
     @property
     def in_detail(self) -> bool:

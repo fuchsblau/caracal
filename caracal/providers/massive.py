@@ -46,10 +46,10 @@ class MassiveProvider:
                 to=end_date.isoformat(),
                 adjusted=True,
             ))
-        except Exception as e:
+        except Exception:
             raise ProviderError(
-                f"Failed to fetch data for {ticker}: {e}"
-            ) from e
+                f"Failed to fetch data for {ticker}"
+            ) from None
 
         if not aggs:
             raise TickerNotFoundError(ticker)

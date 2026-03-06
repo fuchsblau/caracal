@@ -46,8 +46,20 @@ class TestYahooProvider:
         mock_download.side_effect = Exception("Network error")
 
         provider = YahooProvider()
-        with pytest.raises(ProviderError, match="Network error"):
+        with pytest.raises(ProviderError, match="Failed to fetch data for AAPL"):
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 3))
+
+    @patch("caracal.providers.yahoo.yf.download")
+    def test_fetch_ohlcv_error_does_not_leak_details(self, mock_download):
+        mock_download.side_effect = ConnectionError(
+            "Connection to internal-proxy.corp:8080 refused"
+        )
+
+        provider = YahooProvider()
+        with pytest.raises(ProviderError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
+        assert "internal-proxy" not in str(exc_info.value)
+        assert "8080" not in str(exc_info.value)
 
     @patch("caracal.providers.yahoo.yf.Ticker")
     def test_validate_ticker_valid(self, mock_ticker_cls):

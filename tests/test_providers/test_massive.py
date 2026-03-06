@@ -95,8 +95,23 @@ class TestMassiveProvider:
         from caracal.providers.massive import MassiveProvider
 
         provider = MassiveProvider(api_key="pk_test")
-        with pytest.raises(ProviderError, match="Unauthorized"):
+        with pytest.raises(ProviderError, match="Failed to fetch data for AAPL"):
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 3))
+
+    @patch("caracal.providers.massive.RESTClient")
+    def test_fetch_ohlcv_error_does_not_leak_details(self, mock_client_cls):
+        mock_client = mock_client_cls.return_value
+        mock_client.list_aggs.side_effect = Exception(
+            "SSL: CERTIFICATE_VERIFY_FAILED at /usr/lib/python3.12"
+        )
+
+        from caracal.providers.massive import MassiveProvider
+
+        provider = MassiveProvider(api_key="pk_test")
+        with pytest.raises(ProviderError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
+        assert "CERTIFICATE_VERIFY" not in str(exc_info.value)
+        assert "/usr/lib" not in str(exc_info.value)
 
     @patch("caracal.providers.massive.RESTClient")
     def test_validate_ticker_valid(self, mock_client_cls):

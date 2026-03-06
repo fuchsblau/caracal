@@ -32,8 +32,8 @@ class YahooProvider:
                 end=end_date.isoformat(),
                 progress=False,
             )
-        except Exception as e:
-            raise ProviderError(f"Failed to fetch data for {ticker}: {e}") from e
+        except Exception:
+            raise ProviderError(f"Failed to fetch data for {ticker}") from None
 
         if df.empty:
             raise TickerNotFoundError(ticker)

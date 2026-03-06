@@ -131,6 +131,23 @@ class TestIBKRProvider:
         with pytest.raises(ProviderError, match="TWS"):
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 3))
 
+    def test_fetch_ohlcv_error_does_not_leak_details(self):
+        from caracal.providers.ibkr import IBKRProvider
+
+        mock_ib = MagicMock()
+        mock_ib.isConnected.return_value = True
+        mock_ib.reqHistoricalData.side_effect = Exception(
+            "TWS error 162: Historical Market Data not subscribed for SMART/USD"
+        )
+
+        provider = IBKRProvider()
+        provider._ib = mock_ib
+
+        with pytest.raises(ProviderError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
+        assert "162" not in str(exc_info.value)
+        assert "not subscribed" not in str(exc_info.value)
+
     def test_connection_reuse(self):
         from caracal.providers.ibkr import IBKRProvider
 

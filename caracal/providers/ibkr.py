@@ -69,10 +69,10 @@ class IBKRProvider:
                 useRTH=True,
                 formatDate=1,
             )
-        except Exception as e:
+        except Exception:
             raise ProviderError(
-                f"Failed to fetch data for {ticker}: {e}"
-            ) from e
+                f"Failed to fetch data for {ticker}"
+            ) from None
 
         if not bars:
             raise TickerNotFoundError(ticker)

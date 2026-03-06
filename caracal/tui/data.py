@@ -52,11 +52,13 @@ class DataService:
 
     def _build_ticker_row(self, ticker: str) -> dict:
         """Build a single watchlist row from cached data."""
+        name = self._storage.get_ticker_name(ticker) or ticker
         df = self._storage.get_ohlcv(ticker)
 
         if df.empty or len(df) < 1:
             return {
                 "ticker": ticker,
+                "name": name,
                 "close": None,
                 "change_pct": None,
                 "signal": "N/A",
@@ -116,6 +118,7 @@ class DataService:
 
         return {
             "ticker": ticker,
+            "name": name,
             "close": close,
             "change_pct": change_pct,
             "signal": signal,
@@ -178,10 +181,30 @@ class DataService:
                         self._storage.store_ohlcv(ticker, df)
                 except Exception:
                     pass  # Keep cached data on provider failure
+
+            # Cache company names (best-effort)
+            self._fetch_ticker_names(tickers)
         except Exception:
             pass  # Fall back to cached data if provider unavailable
 
         return self.get_watchlist_overview(name)
+
+    def _fetch_ticker_names(self, tickers: list[str]) -> None:
+        """Fetch and cache company names for tickers missing a name."""
+        try:
+            import yfinance as yf
+        except ImportError:
+            return
+        for ticker in tickers:
+            if self._storage.get_ticker_name(ticker):
+                continue
+            try:
+                info = yf.Ticker(ticker).info
+                name = info.get("shortName") or info.get("longName")
+                if name:
+                    self._storage.store_ticker_name(ticker, name)
+            except Exception:
+                pass
 
     def add_to_watchlist(
         self, name: str, tickers: list[str]

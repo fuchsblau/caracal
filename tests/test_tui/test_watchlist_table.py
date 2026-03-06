@@ -24,6 +24,7 @@ class WatchlistTableApp(App):
 
 SAMPLE_ROW = {
     "ticker": "AAPL",
+    "name": "Apple Inc.",
     "close": 175.50,
     "change_pct": 2.34,
     "signal": "buy",
@@ -40,7 +41,7 @@ class TestWatchlistTableColumns:
         app = WatchlistTableApp([SAMPLE_ROW])
         async with app.run_test():
             table = app.query_one(WatchlistTable)
-            assert table.column_count == 8
+            assert table.column_count == 9
 
     @pytest.mark.asyncio
     async def test_renders_ticker(self):
@@ -59,7 +60,7 @@ class TestWatchlistTableFormatting:
             from textual.widgets import DataTable
             dt = table.query_one(DataTable)
             from textual.coordinate import Coordinate
-            cell = dt.get_cell_at(Coordinate(0, 2))  # Change% column
+            cell = dt.get_cell_at(Coordinate(0, 3))  # Change% column
             assert isinstance(cell, Text)
             assert "#4caf50" in str(cell.style) or "4caf50" in str(cell.style).lower()
 
@@ -71,7 +72,7 @@ class TestWatchlistTableFormatting:
             table = app.query_one(WatchlistTable)
             dt = table.query_one("DataTable")
             from textual.coordinate import Coordinate
-            cell = dt.get_cell_at(Coordinate(0, 2))
+            cell = dt.get_cell_at(Coordinate(0, 3))
             assert isinstance(cell, Text)
             assert "#f44336" in str(cell.style) or "f44336" in str(cell.style).lower()
 
@@ -81,6 +82,7 @@ class TestWatchlistTableNullHandling:
     async def test_handles_null_values(self):
         row = {
             "ticker": "NEW",
+            "name": "NEW",
             "close": None,
             "change_pct": None,
             "signal": "N/A",

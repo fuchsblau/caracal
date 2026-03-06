@@ -80,6 +80,12 @@ class DuckDBStorage:
                     FOREIGN KEY (watchlist_name) REFERENCES watchlists(name)
                 )
             """)
+            self._conn.execute("""
+                CREATE TABLE IF NOT EXISTS ticker_metadata (
+                    ticker VARCHAR NOT NULL PRIMARY KEY,
+                    name VARCHAR
+                )
+            """)
         except duckdb.Error as e:
             raise StorageError(f"Failed to initialise schema: {e}") from e
 
@@ -298,6 +304,28 @@ class DuckDBStorage:
             return result is not None
         except duckdb.Error as e:
             raise StorageError(f"Failed to check watchlist: {e}") from e
+
+    # -- Ticker metadata --------------------------------------------------
+
+    def get_ticker_name(self, ticker: str) -> str | None:
+        """Return the cached company name for a ticker, or None."""
+        try:
+            result = self._conn.execute(
+                "SELECT name FROM ticker_metadata WHERE ticker = ?", [ticker]
+            ).fetchone()
+            return result[0] if result else None
+        except duckdb.Error:
+            return None
+
+    def store_ticker_name(self, ticker: str, name: str) -> None:
+        """Cache a company name for a ticker (upsert)."""
+        try:
+            self._conn.execute(
+                "INSERT OR REPLACE INTO ticker_metadata (ticker, name) VALUES (?, ?)",
+                [ticker, name],
+            )
+        except duckdb.Error:
+            pass  # Best-effort cache — don't fail on metadata
 
     # -- lifecycle --------------------------------------------------------
 

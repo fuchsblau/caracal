@@ -119,6 +119,56 @@ class TestWatchlistPanel:
             tabs = panel.query_one(TabbedContent)
             assert tabs.display
 
+    @pytest.mark.asyncio
+    async def test_in_detail_property(self):
+        """in_detail property reflects drill-down state."""
+        app = PanelTestApp()
+        async with app.run_test():
+            panel = app.query_one(WatchlistPanel)
+            assert panel.in_detail is False
+            detail_data = {
+                "ticker": "AAPL",
+                "close": 175.5,
+                "change_pct": 2.3,
+                "signal": "buy",
+                "confidence": 0.85,
+                "indicators": {},
+                "ohlcv": [],
+            }
+            panel.show_detail(detail_data)
+            assert panel.in_detail is True
+            panel.hide_detail()
+            assert panel.in_detail is False
+
+    @pytest.mark.asyncio
+    async def test_show_detail_hides_tabs_and_shows_detail(self):
+        """show_detail toggles visibility correctly."""
+        app = PanelTestApp()
+        async with app.run_test():
+            panel = app.query_one(WatchlistPanel)
+            tabs = panel.query_one(TabbedContent)
+            detail = panel.query_one(AssetDetailView)
+            # Before drill-down
+            assert tabs.display is True
+            assert detail.display is False
+            # After drill-down
+            panel.show_detail({
+                "ticker": "XOM", "close": 110.0, "change_pct": -0.5,
+                "signal": "hold", "confidence": 0.4, "indicators": {},
+                "ohlcv": [],
+            })
+            assert tabs.display is False
+            assert detail.display is True
+
+    @pytest.mark.asyncio
+    async def test_detail_view_is_child_of_panel(self):
+        """AssetDetailView is composed inside WatchlistPanel."""
+        app = PanelTestApp()
+        async with app.run_test():
+            panel = app.query_one(WatchlistPanel)
+            detail = panel.query_one(AssetDetailView)
+            assert detail is not None
+
 
 # ---------------------------------------------------------------------------
 # US-059: Split-Layout with Tabbed Watchlists

@@ -276,6 +276,57 @@ class TestDrillDown:
             # Should still not be in detail
             assert not panel.in_detail
 
+    @pytest.mark.asyncio
+    async def test_drill_down_preserves_cursor_on_return(self, config):
+        """Cursor position is restored after Escape from detail view."""
+        app = _make_app_with_watchlists(config, {"wl": ["AAPL", "MSFT"]})
+        async with app.run_test() as pilot:
+            panel = app.query_one(WatchlistPanel)
+            table = panel.get_active_table()
+            dt = table.query_one("DataTable")
+            # Move cursor to row 1 (MSFT)
+            await pilot.press("j")
+            await pilot.pause()
+            assert dt.cursor_coordinate.row == 1
+            # Drill down
+            await pilot.press("enter")
+            await pilot.pause()
+            assert panel.in_detail
+            # Return
+            await pilot.press("escape")
+            await pilot.pause()
+            assert not panel.in_detail
+            # Cursor should still be at row 1
+            table = panel.get_active_table()
+            dt = table.query_one("DataTable")
+            assert dt.cursor_coordinate.row == 1
+
+    @pytest.mark.asyncio
+    async def test_drill_down_sets_focused_asset(self, config):
+        """Drill-down sets focused_asset to the selected ticker."""
+        app = _make_app_with_watchlists(config)
+        async with app.run_test() as pilot:
+            assert app.focused_asset is None
+            await pilot.press("enter")
+            await pilot.pause()
+            assert app.focused_asset is not None
+            # focused_asset should be a ticker from the watchlist
+            assert isinstance(app.focused_asset, str)
+            assert len(app.focused_asset) > 0
+
+    @pytest.mark.asyncio
+    async def test_detail_view_renders_in_watchlist_panel(self, config):
+        """AssetDetailView is a child of WatchlistPanel (not a separate screen)."""
+        from caracal.tui.widgets.asset_detail_view import AssetDetailView
+
+        app = _make_app_with_watchlists(config)
+        async with app.run_test() as pilot:
+            await pilot.press("enter")
+            await pilot.pause()
+            panel = app.query_one(WatchlistPanel)
+            detail = panel.query_one(AssetDetailView)
+            assert detail.display is True
+
 
 # ---------------------------------------------------------------------------
 # Sort

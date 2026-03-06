@@ -254,14 +254,13 @@ class CaracalApp(App):
             return
         from caracal.tui.screens.remove_ticker import RemoveTickerModal
 
+        self._pending_remove_ticker = ticker
         self.push_screen(RemoveTickerModal(ticker), self._on_remove_result)
 
     def _on_remove_result(self, confirmed: bool) -> None:
         if not confirmed:
             return
-        panel = self.query_one("#watchlist-panel", WatchlistPanel)
-        table = panel.get_active_table()
-        ticker = table.get_selected_ticker() if table else None
+        ticker = self._pending_remove_ticker
         if not ticker:
             return
         from caracal.storage.duckdb import StorageError

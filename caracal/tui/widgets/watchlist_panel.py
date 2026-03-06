@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from textual.css.query import NoMatches
 from textual.widget import Widget
 from textual.widgets import TabPane, TabbedContent
 
@@ -22,7 +23,7 @@ class WatchlistPanel(Widget):
         """Return the number of tabs in the TabbedContent."""
         try:
             return self.query_one(TabbedContent).tab_count
-        except Exception:
+        except NoMatches:
             return 0
 
     def compose(self):
@@ -53,7 +54,7 @@ class WatchlistPanel(Widget):
         try:
             table = self.query_one(f"#wt-{name}", WatchlistTable)
             table.load_data(rows)
-        except Exception:
+        except NoMatches:
             pass
 
     def show_detail(self, detail: dict) -> None:
@@ -84,5 +85,5 @@ class WatchlistPanel(Widget):
         try:
             pane = tc.query_one(f"#{active}", TabPane)
             return pane.query_one(WatchlistTable)
-        except Exception:
+        except NoMatches:
             return None

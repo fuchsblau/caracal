@@ -7,6 +7,7 @@ from caracal.tui import CaracalApp
 from caracal.tui.data import DataService
 from caracal.tui.widgets.watchlist_panel import WatchlistPanel
 from caracal.tui.widgets.side_panel import SidePanel
+from textual.widgets import Header
 
 
 def _make_app_with_data():
@@ -67,6 +68,20 @@ class TestAppLayout:
             panel = app.query_one(WatchlistPanel)
             table = panel.get_active_table()
             assert table.sort_column is not None
+
+    @pytest.mark.asyncio
+    async def test_header_shows_clock(self):
+        app = _make_app_with_data()
+        async with app.run_test():
+            header = app.query_one(Header)
+            assert header._show_clock is True
+
+    @pytest.mark.asyncio
+    async def test_header_icon_is_fisheye(self):
+        app = _make_app_with_data()
+        async with app.run_test():
+            header = app.query_one(Header)
+            assert header.icon == "◉"
 
     @pytest.mark.asyncio
     async def test_manual_refresh(self):

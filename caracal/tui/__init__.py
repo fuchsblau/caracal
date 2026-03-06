@@ -59,7 +59,7 @@ class CaracalApp(App):
         self._watchlist_names: list[str] = []
 
     def compose(self) -> ComposeResult:
-        yield Header()
+        yield Header(show_clock=True, icon="◉")
         with Horizontal(id="main-layout"):
             yield WatchlistPanel(id="watchlist-panel")
             yield SidePanel(id="side-panel")

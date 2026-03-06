@@ -101,6 +101,17 @@ class TestAppLayout:
             assert footer is not None
 
     @pytest.mark.asyncio
+    async def test_refresh_updates_footer_timestamp(self):
+        app = _make_app_with_data()
+        async with app.run_test() as pilot:
+            footer = app.query_one(CaracalFooter)
+            assert footer.last_updated == "—"
+            await pilot.press("r")
+            await pilot.pause()
+            # After refresh, timestamp should no longer be the default dash
+            assert footer.last_updated != "—"
+
+    @pytest.mark.asyncio
     async def test_manual_refresh(self):
         app = _make_app_with_data()
         async with app.run_test() as pilot:

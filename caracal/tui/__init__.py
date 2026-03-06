@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from datetime import datetime
+
 from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal
@@ -92,6 +94,7 @@ class CaracalApp(App):
             return
         rows = self.data_service.get_watchlist_overview(name)
         panel.refresh_watchlist(name, rows)
+        self.query_one(CaracalFooter).last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def on_tabbed_content_tab_activated(self, event) -> None:
         """Sync active_watchlist when tabs are switched (arrow keys, clicks)."""
@@ -155,6 +158,7 @@ class CaracalApp(App):
         rows = self.data_service.refresh_watchlist_live(name)
         panel = self.query_one("#watchlist-panel", WatchlistPanel)
         panel.refresh_watchlist(name, rows)
+        self.query_one(CaracalFooter).last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def action_switch_tab(self, number: str) -> None:
         idx = int(number) - 1

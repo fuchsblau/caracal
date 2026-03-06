@@ -85,6 +85,15 @@ class TestAppLayout:
             assert header.icon == "◉"
 
     @pytest.mark.asyncio
+    async def test_header_height_is_one(self):
+        app = _make_app_with_data()
+        async with app.run_test():
+            header = app.query_one(CaracalHeader)
+            # Header must be fixed at height 1 — no tall mode, no subtitle clutter
+            assert header.styles.height is not None
+            assert header.styles.height.value == 1
+
+    @pytest.mark.asyncio
     async def test_header_click_does_not_expand(self):
         app = _make_app_with_data()
         async with app.run_test() as pilot:

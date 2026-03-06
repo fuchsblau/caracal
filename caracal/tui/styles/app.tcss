@@ -32,7 +32,7 @@ WatchlistPanel {
     height: 1fr;
 }
 
-#watchlist-table {
+WatchlistTable {
     height: 1fr;
 }
 

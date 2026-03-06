@@ -39,6 +39,7 @@ Footer {
 /* Main layout */
 #main-layout {
     height: 1fr;
+    padding: 1 0;
 }
 
 WatchlistPanel {

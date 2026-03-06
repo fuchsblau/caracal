@@ -93,6 +93,12 @@ class CaracalApp(App):
         rows = self.data_service.get_watchlist_overview(name)
         panel.refresh_watchlist(name, rows)
 
+    def on_tabbed_content_tab_activated(self, event) -> None:
+        """Sync active_watchlist when tabs are switched (arrow keys, clicks)."""
+        tab_id = str(event.pane.id or "")
+        if tab_id.startswith("tab-"):
+            self.active_watchlist = tab_id[4:]
+
     # -- Navigation -----------------------------------------------------------
 
     def action_cursor_down(self) -> None:

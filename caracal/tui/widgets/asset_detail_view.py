@@ -13,6 +13,7 @@ from caracal.tui.theme import (
     COLOR_NEUTRAL,
     COLOR_POSITIVE,
     COLOR_PRICE,
+    INTERPRETATION_SYMBOLS,
     SIGNAL_COLORS,
     format_interpretation,
 )
@@ -105,17 +106,13 @@ class AssetDetailView(Widget):
             return f"  {name:<16} [dim]N/A[/]\n"
 
         val_str = f"{value:.2f}"
-        color, label = format_interpretation(interpretation)
+        color, _ = format_interpretation(interpretation)
+        symbol = INTERPRETATION_SYMBOLS.get(interpretation, "")
 
-        if label and detail_str:
+        if symbol and detail_str:
             return (
                 f"  {name:<16} [{COLOR_PRICE}]{val_str:>10}[/{COLOR_PRICE}]"
-                f"  [{color}]{detail_str} {label}[/{color}]\n"
-            )
-        if label:
-            return (
-                f"  {name:<16} [{COLOR_PRICE}]{val_str:>10}[/{COLOR_PRICE}]"
-                f"  [{color}]{label}[/{color}]\n"
+                f"   [{color}]{symbol} {detail_str}[/{color}]\n"
             )
         return f"  {name:<16} [{COLOR_PRICE}]{val_str:>10}[/{COLOR_PRICE}]\n"
 

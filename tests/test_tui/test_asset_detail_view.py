@@ -22,20 +22,20 @@ SAMPLE_DETAIL = {
             "category": "Trend",
             "indicators": [
                 {"name": "SMA 20", "key": "sma_20", "value": 170.0,
-                 "interpretation": "bullish", "detail": "Price > indicator"},
+                 "interpretation": "bullish", "detail": "above"},
                 {"name": "SMA 50", "key": "sma_50", "value": 165.0,
-                 "interpretation": "bullish", "detail": "Price > indicator"},
+                 "interpretation": "bullish", "detail": "above"},
                 {"name": "EMA 12", "key": "ema_12", "value": 172.0,
-                 "interpretation": "bullish", "detail": "Price > indicator"},
+                 "interpretation": "bullish", "detail": "above"},
             ],
         },
         {
             "category": "Momentum",
             "indicators": [
                 {"name": "RSI 14", "key": "rsi_14", "value": 65.2,
-                 "interpretation": "neutral", "detail": "65\u2014"},
+                 "interpretation": "neutral", "detail": "neutral"},
                 {"name": "MACD", "key": "macd", "value": 3.5,
-                 "interpretation": "bullish", "detail": "BULL"},
+                 "interpretation": "bullish", "detail": "bull"},
                 {"name": "MACD Signal", "key": "macd_signal", "value": 2.1,
                  "interpretation": None, "detail": None},
             ],
@@ -44,9 +44,9 @@ SAMPLE_DETAIL = {
             "category": "Volatility",
             "indicators": [
                 {"name": "BB Upper", "key": "bollinger_upper", "value": 180.0,
-                 "interpretation": "neutral", "detail": "\u2014OK"},
+                 "interpretation": "neutral", "detail": "in band"},
                 {"name": "BB Lower", "key": "bollinger_lower", "value": 160.0,
-                 "interpretation": "neutral", "detail": "\u2014OK"},
+                 "interpretation": "neutral", "detail": "in band"},
             ],
         },
     ],
@@ -120,7 +120,7 @@ class TestAssetDetailView:
         async with app.run_test():
             sections = app.query_one("#indicator-sections", Static)
             content = sections.content
-            assert "Bullish" in content or "BULL" in content
+            assert "above" in content or "bull" in content
 
     @pytest.mark.asyncio
     async def test_shows_ohlcv(self):
@@ -164,7 +164,7 @@ class TestAssetDetailView:
                     "category": "Momentum",
                     "indicators": [
                         {"name": "RSI 14", "key": "rsi_14", "value": 65.2,
-                         "interpretation": "neutral", "detail": "65\u2014"},
+                         "interpretation": "neutral", "detail": "neutral"},
                     ],
                 },
             ],

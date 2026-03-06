@@ -15,6 +15,7 @@ from caracal.tui.theme import (
     COLOR_OVERSOLD,
     INDICATOR_STYLES,
     INTERPRETATION_COLORS,
+    INTERPRETATION_SYMBOLS,
     SIGNAL_COLORS,
     format_bb,
     format_confidence,
@@ -169,6 +170,21 @@ class TestInterpretationColors:
 
     def test_oversold_matches(self):
         assert INTERPRETATION_COLORS["oversold"] == COLOR_OVERSOLD
+
+
+class TestInterpretationSymbols:
+    def test_covers_all_interpretations(self):
+        expected = {"bullish", "bearish", "neutral", "overbought", "oversold"}
+        assert set(INTERPRETATION_SYMBOLS.keys()) == expected
+
+    def test_bullish_is_up_arrow(self):
+        assert INTERPRETATION_SYMBOLS["bullish"] == "\u25b2"
+
+    def test_bearish_is_down_arrow(self):
+        assert INTERPRETATION_SYMBOLS["bearish"] == "\u25bc"
+
+    def test_neutral_is_dash(self):
+        assert INTERPRETATION_SYMBOLS["neutral"] == "\u2014"
 
 
 class TestFormatInterpretation:

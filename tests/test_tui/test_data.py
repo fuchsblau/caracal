@@ -380,14 +380,14 @@ class TestInterpretIndicator:
             "sma_20", 170.0, close=175.0, indicators={}
         )
         assert interp == "bullish"
-        assert ">" in detail
+        assert detail == "above"
 
     def test_sma_bearish(self, data_service):
         interp, detail = data_service._interpret_indicator(
             "sma_20", 180.0, close=175.0, indicators={}
         )
         assert interp == "bearish"
-        assert "<" in detail
+        assert detail == "below"
 
     def test_ema_bullish(self, data_service):
         interp, detail = data_service._interpret_indicator(
@@ -400,34 +400,35 @@ class TestInterpretIndicator:
             "rsi_14", 72.0, close=175.0, indicators={}
         )
         assert interp == "overbought"
-        assert "72" in detail
+        assert detail == "overbought"
 
     def test_rsi_oversold(self, data_service):
         interp, detail = data_service._interpret_indicator(
             "rsi_14", 28.0, close=175.0, indicators={}
         )
         assert interp == "oversold"
-        assert "28" in detail
+        assert detail == "oversold"
 
     def test_rsi_neutral(self, data_service):
         interp, detail = data_service._interpret_indicator(
             "rsi_14", 50.0, close=175.0, indicators={}
         )
         assert interp == "neutral"
+        assert detail == "neutral"
 
     def test_macd_bullish(self, data_service):
         interp, detail = data_service._interpret_indicator(
             "macd", 3.5, close=175.0, indicators={"macd_signal": 2.1}
         )
         assert interp == "bullish"
-        assert detail == "BULL"
+        assert detail == "bull"
 
     def test_macd_bearish(self, data_service):
         interp, detail = data_service._interpret_indicator(
             "macd", 1.0, close=175.0, indicators={"macd_signal": 2.1}
         )
         assert interp == "bearish"
-        assert detail == "BEAR"
+        assert detail == "bear"
 
     def test_macd_signal_no_interpretation(self, data_service):
         interp, detail = data_service._interpret_indicator(
@@ -441,6 +442,7 @@ class TestInterpretIndicator:
             indicators={"bollinger_upper": 180.0, "bollinger_lower": 160.0}
         )
         assert interp == "overbought"
+        assert detail == "overbought"
 
     def test_bollinger_oversold(self, data_service):
         interp, detail = data_service._interpret_indicator(
@@ -448,6 +450,7 @@ class TestInterpretIndicator:
             indicators={"bollinger_upper": 180.0, "bollinger_lower": 160.0}
         )
         assert interp == "oversold"
+        assert detail == "oversold"
 
     def test_bollinger_neutral(self, data_service):
         interp, detail = data_service._interpret_indicator(
@@ -455,6 +458,7 @@ class TestInterpretIndicator:
             indicators={"bollinger_upper": 180.0, "bollinger_lower": 160.0}
         )
         assert interp == "neutral"
+        assert detail == "in band"
 
     def test_none_value(self, data_service):
         interp, detail = data_service._interpret_indicator(

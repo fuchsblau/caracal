@@ -279,23 +279,22 @@ class DataService:
 
         if key in ("sma_20", "sma_50", "ema_12"):
             if close > value:
-                return "bullish", "Price > indicator"
-            return "bearish", "Price < indicator"
+                return "bullish", "above"
+            return "bearish", "below"
 
         if key == "rsi_14":
-            rounded = round(value)
             if value > 70:
-                return "overbought", f"{rounded}\u25b2"
+                return "overbought", "overbought"
             if value < 30:
-                return "oversold", f"{rounded}\u25bc"
-            return "neutral", f"{rounded}\u2014"
+                return "oversold", "oversold"
+            return "neutral", "neutral"
 
         if key == "macd":
             macd_sig = indicators.get("macd_signal")
             if macd_sig is not None:
                 if value > macd_sig:
-                    return "bullish", "BULL"
-                return "bearish", "BEAR"
+                    return "bullish", "bull"
+                return "bearish", "bear"
             return None, None
 
         if key == "macd_signal":
@@ -309,10 +308,10 @@ class DataService:
                 if band_width > 0:
                     position = (close - bb_lower) / band_width
                     if position > 1.0:
-                        return "overbought", "\u25b2OB"
+                        return "overbought", "overbought"
                     if position < 0.0:
-                        return "oversold", "\u25bcOS"
-                    return "neutral", "\u2014OK"
+                        return "oversold", "oversold"
+                    return "neutral", "in band"
             return None, None
 
         return None, None

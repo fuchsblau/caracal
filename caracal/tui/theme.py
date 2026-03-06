@@ -50,6 +50,14 @@ INTERPRETATION_COLORS: dict[str, str] = {
     "oversold": COLOR_OVERSOLD,
 }
 
+INTERPRETATION_SYMBOLS: dict[str, str] = {
+    "bullish": "\u25b2",
+    "bearish": "\u25bc",
+    "neutral": "\u2014",
+    "overbought": "\u25b2",
+    "oversold": "\u25bc",
+}
+
 
 def format_interpretation(interpretation: str | None) -> tuple[str, str]:
     """Return (color, label) for an interpretation.

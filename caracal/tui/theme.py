@@ -29,6 +29,7 @@ COLOR_WARNING = "#e5c07b"
 COLOR_OVERBOUGHT = "#e06c75"
 COLOR_OVERSOLD = "#98c379"
 COLOR_NEUTRAL = "#e5c07b"
+COLOR_HIGHLIGHT = "#3d4450"  # Subtle background flash for changed values
 
 SIGNAL_COLORS = {
     "buy": COLOR_POSITIVE,

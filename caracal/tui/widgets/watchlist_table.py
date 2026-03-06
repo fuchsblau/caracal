@@ -8,6 +8,7 @@ from textual.widget import Widget
 from textual.widgets import DataTable, Static
 
 from caracal.tui.theme import (
+    COLOR_HIGHLIGHT,
     COLOR_MUTED,
     COLOR_NEGATIVE,
     COLOR_POSITIVE,
@@ -45,12 +46,17 @@ class WatchlistTable(Widget):
             super().__init__()
             self.ticker = ticker
 
+    # Keys compared to detect change-worthy differences
+    _CHANGE_KEYS = ("close", "change_pct", "signal", "confidence")
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self._rows: list[dict] = []
         self._sort_cycle_index: int = -1
         self._sort_ascending: bool = True
         self._previous_values: dict[str, dict] = {}
+        self._highlighted_tickers: set[str] = set()
+        self._highlight_timer = None
 
     @property
     def sort_column(self) -> str | None:
@@ -97,11 +103,16 @@ class WatchlistTable(Widget):
 
         # Store previous values for change detection
         self._previous_values = {r["ticker"]: r for r in self._rows}
+
+        # Detect which tickers have changed values
+        self._highlighted_tickers = self._detect_changes(rows)
+
         self._rows = rows
 
         table.clear()
         for row in rows:
-            table.add_row(*self._format_row(row), key=row["ticker"])
+            highlight = row["ticker"] in self._highlighted_tickers
+            table.add_row(*self._format_row(row, highlight=highlight), key=row["ticker"])
 
         # Toggle empty hint vs table
         table.display = len(rows) > 0
@@ -111,26 +122,66 @@ class WatchlistTable(Widget):
         if cursor_ticker:
             self._restore_cursor(cursor_ticker)
 
-    def _format_row(self, row: dict) -> tuple:
-        """Format a data row into Rich Text cells."""
-        ticker = Text(row["ticker"], style="bold")
-        name = Text(row.get("name", row["ticker"]), style=COLOR_MUTED)
+        # Schedule highlight removal after 1.5 seconds
+        if self._highlighted_tickers:
+            if self._highlight_timer is not None:
+                self._highlight_timer.stop()
+            self._highlight_timer = self.set_timer(1.5, self._clear_highlights)
+
+    def _detect_changes(self, new_rows: list[dict]) -> set[str]:
+        """Compare new rows with previous values and return changed tickers."""
+        if not self._previous_values:
+            return set()
+        changed = set()
+        for row in new_rows:
+            ticker = row["ticker"]
+            prev = self._previous_values.get(ticker)
+            if prev is None:
+                continue
+            for key in self._CHANGE_KEYS:
+                if row.get(key) != prev.get(key):
+                    changed.add(ticker)
+                    break
+        return changed
+
+    def _clear_highlights(self) -> None:
+        """Remove change highlights by reloading data without highlight flags."""
+        self._highlighted_tickers.clear()
+        self._highlight_timer = None
+        table = self.query_one(DataTable)
+        cursor_ticker = self._get_cursor_ticker()
+        table.clear()
+        for row in self._rows:
+            table.add_row(*self._format_row(row, highlight=False), key=row["ticker"])
+        if cursor_ticker:
+            self._restore_cursor(cursor_ticker)
+
+    def _format_row(self, row: dict, *, highlight: bool = False) -> tuple:
+        """Format a data row into Rich Text cells.
+
+        When *highlight* is True, changed rows get a subtle background
+        flash that is removed after a short timer.
+        """
+        bg = f" on {COLOR_HIGHLIGHT}" if highlight else ""
+
+        ticker = Text(row["ticker"], style=f"bold{bg}")
+        name = Text(row.get("name", row["ticker"]), style=f"{COLOR_MUTED}{bg}")
 
         if row["close"] is not None:
-            price = Text(f"{row['close']:.2f}", style=COLOR_PRICE, justify="right")
+            price = Text(f"{row['close']:.2f}", style=f"{COLOR_PRICE}{bg}", justify="right")
         else:
-            price = Text("N/A", style=COLOR_MUTED, justify="right")
+            price = Text("N/A", style=f"{COLOR_MUTED}{bg}", justify="right")
 
         if row["change_pct"] is not None:
             pct_val = row["change_pct"]
             pct_color = COLOR_POSITIVE if pct_val >= 0 else COLOR_NEGATIVE
-            change = Text(f"{pct_val:+.2f}%", style=pct_color, justify="right")
+            change = Text(f"{pct_val:+.2f}%", style=f"{pct_color}{bg}", justify="right")
         else:
-            change = Text("N/A", style=COLOR_MUTED, justify="right")
+            change = Text("N/A", style=f"{COLOR_MUTED}{bg}", justify="right")
 
         sig = row["signal"]
         sig_color = SIGNAL_COLORS.get(sig, COLOR_MUTED)
-        signal = Text(sig.upper(), style=f"bold {sig_color}", justify="right")
+        signal = Text(sig.upper(), style=f"bold {sig_color}{bg}", justify="right")
 
         confidence = format_confidence(row.get("confidence"))
         rsi = format_rsi(row.get("rsi"))

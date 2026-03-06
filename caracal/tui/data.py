@@ -8,6 +8,27 @@ from caracal.config import CONFIG_PATH, CaracalConfig
 from caracal.output.precision import PERCENT_DECIMALS, PRICE_DECIMALS
 from caracal.storage.duckdb import DuckDBStorage
 
+# -- Indicator Category Registry (ADR-018, NF-022) ----------------------------
+
+INDICATOR_CATEGORIES: dict[str, list[str]] = {
+    "Trend": ["sma_20", "sma_50", "ema_12"],
+    "Momentum": ["rsi_14", "macd", "macd_signal"],
+    "Volatility": ["bollinger_upper", "bollinger_lower"],
+}
+
+CATEGORY_ORDER: list[str] = ["Trend", "Momentum", "Volatility"]
+
+INDICATOR_DISPLAY_NAMES: dict[str, str] = {
+    "sma_20": "SMA 20",
+    "sma_50": "SMA 50",
+    "ema_12": "EMA 12",
+    "rsi_14": "RSI 14",
+    "macd": "MACD",
+    "macd_signal": "MACD Signal",
+    "bollinger_upper": "BB Upper",
+    "bollinger_lower": "BB Lower",
+}
+
 
 class DataService:
     """Facade over Storage, Provider, and Analysis modules.

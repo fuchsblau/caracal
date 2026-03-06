@@ -7,7 +7,12 @@ import pytest
 
 from caracal.config import CaracalConfig
 from caracal.storage.duckdb import DuckDBStorage, StorageError
-from caracal.tui.data import DataService
+from caracal.tui.data import (
+    CATEGORY_ORDER,
+    INDICATOR_CATEGORIES,
+    INDICATOR_DISPLAY_NAMES,
+    DataService,
+)
 
 
 def _store_ohlcv(storage, ticker, days=31, trend="flat"):
@@ -337,3 +342,33 @@ class TestRefreshWatchlistLive:
         rows = data_service.refresh_watchlist_live("tech")
         assert len(rows) == 1
         assert rows[0]["ticker"] == "AAPL"
+
+
+class TestIndicatorRegistry:
+    def test_categories_cover_all_indicators(self):
+        all_keys = []
+        for keys in INDICATOR_CATEGORIES.values():
+            all_keys.extend(keys)
+        expected = {
+            "sma_20", "sma_50", "ema_12", "rsi_14",
+            "macd", "macd_signal", "bollinger_upper", "bollinger_lower",
+        }
+        assert set(all_keys) == expected
+
+    def test_category_order_matches_categories(self):
+        assert set(CATEGORY_ORDER) == set(INDICATOR_CATEGORIES.keys())
+
+    def test_category_order_is_trend_momentum_volatility(self):
+        assert CATEGORY_ORDER == ["Trend", "Momentum", "Volatility"]
+
+    def test_display_names_cover_all_indicators(self):
+        all_keys = []
+        for keys in INDICATOR_CATEGORIES.values():
+            all_keys.extend(keys)
+        assert set(INDICATOR_DISPLAY_NAMES.keys()) == set(all_keys)
+
+    def test_display_names_are_readable(self):
+        assert INDICATOR_DISPLAY_NAMES["sma_20"] == "SMA 20"
+        assert INDICATOR_DISPLAY_NAMES["rsi_14"] == "RSI 14"
+        assert INDICATOR_DISPLAY_NAMES["macd"] == "MACD"
+        assert INDICATOR_DISPLAY_NAMES["bollinger_upper"] == "BB Upper"

@@ -71,6 +71,7 @@ def fetch(
 
         df = prov.fetch_ohlcv(ticker, start_date, end_date)
         count = storage.store_ohlcv(ticker, df)
+        _cache_ticker_name(storage, ticker)
         _output_fetch_result(output_format, count, ticker, meta, df=df)
     except TickerNotFoundError:
         _handle_ticker_not_found(ctx, output_format, ticker, meta, latest)
@@ -115,6 +116,21 @@ def _handle_ticker_not_found(
     else:
         _output_error(fmt, "INVALID_TICKER", f"Ticker not found: {ticker}", meta)
         ctx.exit(2)
+
+
+def _cache_ticker_name(storage: DuckDBStorage, ticker: str) -> None:
+    """Cache company name from yfinance if not already stored."""
+    if storage.get_ticker_name(ticker):
+        return
+    try:
+        import yfinance as yf
+
+        info = yf.Ticker(ticker).info
+        name = info.get("shortName") or info.get("longName")
+        if name:
+            storage.store_ticker_name(ticker, name)
+    except Exception:
+        pass
 
 
 def _parse_period(period: str, end_date: date) -> date:

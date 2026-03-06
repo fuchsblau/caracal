@@ -95,6 +95,32 @@ class TestWatchlistTableNullHandling:
             assert table.row_count == 1
 
 
+class TestWatchlistTableEmptyHint:
+    @pytest.mark.asyncio
+    async def test_empty_table_shows_hint(self):
+        app = WatchlistTableApp([])
+        async with app.run_test():
+            table = app.query_one(WatchlistTable)
+            from textual.widgets import Static
+
+            hint = table.query_one("#empty-hint", Static)
+            assert hint.display is True
+            dt = table.query_one("DataTable")
+            assert dt.display is False
+
+    @pytest.mark.asyncio
+    async def test_populated_table_hides_hint(self):
+        app = WatchlistTableApp([SAMPLE_ROW])
+        async with app.run_test():
+            table = app.query_one(WatchlistTable)
+            from textual.widgets import Static
+
+            hint = table.query_one("#empty-hint", Static)
+            assert hint.display is False
+            dt = table.query_one("DataTable")
+            assert dt.display is True
+
+
 class TestWatchlistTableSorting:
     @pytest.mark.asyncio
     async def test_cycle_sort_changes_order(self):

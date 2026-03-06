@@ -5,7 +5,7 @@ from __future__ import annotations
 from rich.text import Text
 from textual.message import Message
 from textual.widget import Widget
-from textual.widgets import DataTable
+from textual.widgets import DataTable, Static
 
 from caracal.tui.theme import (
     COLOR_MUTED,
@@ -65,6 +65,7 @@ class WatchlistTable(Widget):
     def compose(self):
         """Compose the widget with an inner DataTable."""
         yield DataTable(cursor_type="row", zebra_stripes=True)
+        yield Static("No tickers yet — press [bold]a[/] to add", id="empty-hint")
 
     def on_mount(self) -> None:
         """Set up columns when the widget is mounted."""
@@ -72,10 +73,13 @@ class WatchlistTable(Widget):
         table.add_columns(
             "Ticker", "Price", "Chg%", "Signal", "Conf", "RSI", "MACD", "BB"
         )
+        # Show hint by default (hidden once load_data adds rows)
+        table.display = False
 
     def load_data(self, rows: list[dict]) -> None:
         """Load or refresh watchlist data into the table."""
         table = self.query_one(DataTable)
+        hint = self.query_one("#empty-hint", Static)
 
         # Save cursor position
         cursor_ticker = self._get_cursor_ticker()
@@ -87,6 +91,10 @@ class WatchlistTable(Widget):
         table.clear()
         for row in rows:
             table.add_row(*self._format_row(row), key=row["ticker"])
+
+        # Toggle empty hint vs table
+        table.display = len(rows) > 0
+        hint.display = len(rows) == 0
 
         # Restore cursor position
         if cursor_ticker:

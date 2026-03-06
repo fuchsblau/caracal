@@ -6,6 +6,8 @@ from typing import Protocol
 
 import pandas as pd
 
+from caracal.providers.pipeline import NormalizedProvider
+
 
 class MarketDataProvider(Protocol):
     """Interface for market data providers."""
@@ -27,6 +29,9 @@ _PROVIDER_MAP: dict[str, tuple[str, str]] = {
     "yahoo": ("caracal.providers.yahoo", "YahooProvider"),
     "massive": ("caracal.providers.massive", "MassiveProvider"),
     "ibkr": ("caracal.providers.ibkr", "IBKRProvider"),
+    "alphavantage": ("caracal.providers.alphavantage", "AlphaVantageProvider"),
+    "eodhd": ("caracal.providers.eodhd", "EODHDProvider"),
+    "finnhub": ("caracal.providers.finnhub", "FinnhubProvider"),
 }
 
 
@@ -60,4 +65,4 @@ def get_provider(name: str = "yahoo", **kwargs) -> MarketDataProvider:
         ) from None
 
     cls = getattr(module, class_name)
-    return cls(**kwargs)
+    return NormalizedProvider(cls(**kwargs))

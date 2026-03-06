@@ -45,6 +45,28 @@ class TestProviderRegistry:
         assert "ibkr" in _PROVIDER_MAP
 
 
+class TestNormalizedProviderIntegration:
+    def test_get_provider_returns_normalized(self):
+        from caracal.providers import get_provider
+        from caracal.providers.pipeline import NormalizedProvider
+
+        provider = get_provider("yahoo")
+        assert isinstance(provider, NormalizedProvider)
+
+    def test_normalized_provider_preserves_name(self):
+        from caracal.providers import get_provider
+
+        provider = get_provider("yahoo")
+        assert provider.name == "yahoo"
+
+    def test_provider_map_contains_new_providers(self):
+        from caracal.providers import _PROVIDER_MAP
+
+        assert "alphavantage" in _PROVIDER_MAP
+        assert "eodhd" in _PROVIDER_MAP
+        assert "finnhub" in _PROVIDER_MAP
+
+
 class TestOHLCVSchema:
     def test_valid_dataframe_passes(self):
         df = pd.DataFrame({

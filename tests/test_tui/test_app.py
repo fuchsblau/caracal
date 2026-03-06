@@ -142,6 +142,36 @@ class TestCursorNavigation:
             assert not panel.in_detail
 
     @pytest.mark.asyncio
+    async def test_j_moves_cursor_to_next_row(self, config):
+        """j key moves the DataTable cursor down by one row."""
+        app = _make_app_with_watchlists(config, {"wl": ["AAPL", "MSFT"]})
+        async with app.run_test() as pilot:
+            panel = app.query_one(WatchlistPanel)
+            table = panel.get_active_table()
+            dt = table.query_one("DataTable")
+            # cursor starts at row 0
+            assert dt.cursor_coordinate.row == 0
+            await pilot.press("j")
+            await pilot.pause()
+            assert dt.cursor_coordinate.row == 1
+
+    @pytest.mark.asyncio
+    async def test_k_moves_cursor_up(self, config):
+        """k key moves the DataTable cursor up by one row."""
+        app = _make_app_with_watchlists(config, {"wl": ["AAPL", "MSFT"]})
+        async with app.run_test() as pilot:
+            panel = app.query_one(WatchlistPanel)
+            table = panel.get_active_table()
+            dt = table.query_one("DataTable")
+            # move down first, then up
+            await pilot.press("j")
+            await pilot.pause()
+            assert dt.cursor_coordinate.row == 1
+            await pilot.press("k")
+            await pilot.pause()
+            assert dt.cursor_coordinate.row == 0
+
+    @pytest.mark.asyncio
     async def test_cursor_down_noop_in_detail(self, config):
         """Cursor movement is a no-op when in detail view."""
         app = _make_app_with_watchlists(config)
@@ -167,6 +197,18 @@ class TestCursorNavigation:
             await pilot.press("k")
             await pilot.pause()
             assert panel.in_detail
+
+    @pytest.mark.asyncio
+    async def test_cursor_navigation_noop_on_empty_watchlist(self, config):
+        """j/k on a watchlist with no tickers is a no-op."""
+        app = _make_app_with_watchlists(config, {"empty": []})
+        async with app.run_test() as pilot:
+            await pilot.press("j")
+            await pilot.pause()
+            await pilot.press("k")
+            await pilot.pause()
+            panel = app.query_one(WatchlistPanel)
+            assert not panel.in_detail
 
 
 # ---------------------------------------------------------------------------
@@ -251,6 +293,29 @@ class TestCycleSort:
             table = panel.get_active_table()
             assert table is not None
             assert table.sort_column is not None
+
+    @pytest.mark.asyncio
+    async def test_sort_full_cycle(self, config):
+        """Pressing s cycles through asc/desc for each sort column."""
+        app = _make_app_with_watchlists(config)
+        async with app.run_test() as pilot:
+            panel = app.query_one(WatchlistPanel)
+            table = panel.get_active_table()
+            # 1st press: ticker asc
+            await pilot.press("s")
+            await pilot.pause()
+            assert table.sort_column == "ticker"
+            assert table._sort_ascending is True
+            # 2nd press: ticker desc
+            await pilot.press("s")
+            await pilot.pause()
+            assert table.sort_column == "ticker"
+            assert table._sort_ascending is False
+            # 3rd press: change_pct asc
+            await pilot.press("s")
+            await pilot.pause()
+            assert table.sort_column == "change_pct"
+            assert table._sort_ascending is True
 
     @pytest.mark.asyncio
     async def test_sort_noop_in_detail(self, config):
@@ -832,3 +897,49 @@ class TestFooterTimestamp:
                 app._update_footer_from_db()
                 footer = app.query_one(CaracalFooter)
                 assert footer.last_updated == "2024-01-15 10:30:00"
+
+
+# ---------------------------------------------------------------------------
+# US-061: Keyboard Binding Completeness
+# ---------------------------------------------------------------------------
+
+
+class TestKeyboardBindings:
+    """US-061: Verify all required keyboard bindings are registered."""
+
+    def test_navigation_bindings(self):
+        """j/k for row navigation, enter for drill-down, escape for back."""
+        keys = {b.key for b in CaracalApp.BINDINGS}
+        assert "j" in keys, "Missing j binding for cursor down"
+        assert "k" in keys, "Missing k binding for cursor up"
+        assert "enter" in keys, "Missing enter binding for drill-down"
+        assert "escape" in keys, "Missing escape binding for back"
+
+    def test_sort_binding(self):
+        """s key for sort cycling."""
+        keys = {b.key for b in CaracalApp.BINDINGS}
+        assert "s" in keys, "Missing s binding for sort"
+
+    def test_refresh_binding(self):
+        """r key for live refresh."""
+        keys = {b.key for b in CaracalApp.BINDINGS}
+        assert "r" in keys, "Missing r binding for refresh"
+
+    def test_tab_switch_bindings_1_through_9(self):
+        """1-9 keys for tab switching."""
+        keys = {b.key for b in CaracalApp.BINDINGS}
+        for n in range(1, 10):
+            assert str(n) in keys, f"Missing tab binding: {n}"
+
+    def test_quit_binding(self):
+        """q key for quit."""
+        keys = {b.key for b in CaracalApp.BINDINGS}
+        assert "q" in keys, "Missing q binding for quit"
+
+    def test_crud_bindings(self):
+        """c/d/a/x for CRUD operations."""
+        keys = {b.key for b in CaracalApp.BINDINGS}
+        assert "c" in keys, "Missing c binding for create watchlist"
+        assert "d" in keys, "Missing d binding for delete watchlist"
+        assert "a" in keys, "Missing a binding for add ticker"
+        assert "x" in keys, "Missing x binding for remove ticker"

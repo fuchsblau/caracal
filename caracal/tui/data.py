@@ -140,18 +140,20 @@ class DataService:
         """Return all watchlists with name, created_at, ticker_count."""
         return self._storage.get_watchlists()
 
-    def get_latest_data_date(self, name: str) -> str | None:
-        """Return the most recent OHLCV date across all tickers in a watchlist.
+    def get_last_fetch_time(self) -> str | None:
+        """Return the last time data was written to the DB.
 
-        Returns date string (YYYY-MM-DD) or None if no data.
+        Uses the DB file's modification time as a proxy for when
+        provider data was last fetched.  Returns None for in-memory DBs.
         """
-        tickers = self._storage.get_watchlist_items(name)
-        latest = None
-        for ticker in tickers:
-            d = self._storage.get_latest_date(ticker)
-            if d is not None and (latest is None or d > latest):
-                latest = d
-        return str(latest) if latest else None
+        import os
+        from datetime import datetime
+
+        db_path = self.config.db_path
+        if db_path == ":memory:" or not os.path.exists(db_path):
+            return None
+        mtime = os.path.getmtime(db_path)
+        return datetime.fromtimestamp(mtime).strftime("%Y-%m-%d %H:%M:%S")
 
     def refresh_watchlist(self, name: str) -> list[dict]:
         """Re-read watchlist data from storage (no provider fetch).

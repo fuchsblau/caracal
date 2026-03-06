@@ -110,23 +110,23 @@ class TestAppLayout:
             assert footer is not None
 
     @pytest.mark.asyncio
-    async def test_footer_shows_data_date_on_mount(self):
+    async def test_footer_default_is_dash_for_memory_db(self):
         app = _make_app_with_data()
         async with app.run_test():
             footer = app.query_one(CaracalFooter)
-            # Footer should show latest OHLCV date from DB
-            assert footer.last_updated != "—"
+            # In-memory DB has no file mtime
+            assert footer.last_updated == "—"
 
     @pytest.mark.asyncio
     async def test_refresh_updates_footer_timestamp(self):
         app = _make_app_with_data()
         async with app.run_test() as pilot:
-            footer = app.query_one(CaracalFooter)
-            before = footer.last_updated
             await pilot.press("r")
             await pilot.pause()
-            # After live refresh, timestamp should be a full datetime
-            assert len(footer.last_updated) > len(before)
+            footer = app.query_one(CaracalFooter)
+            # After live refresh, timestamp is a full datetime
+            assert footer.last_updated != "—"
+            assert len(footer.last_updated) == 19  # YYYY-MM-DD HH:MM:SS
 
     @pytest.mark.asyncio
     async def test_manual_refresh(self):

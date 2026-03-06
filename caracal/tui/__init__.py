@@ -86,13 +86,10 @@ class CaracalApp(App):
         self._update_footer_from_db()
 
     def _update_footer_from_db(self) -> None:
-        """Set footer timestamp from the latest OHLCV data date in DB."""
-        name = self.active_watchlist
-        if not name:
-            return
-        latest = self.data_service.get_latest_data_date(name)
-        if latest:
-            self.query_one(CaracalFooter).last_updated = latest
+        """Set footer timestamp from DB file modification time."""
+        ts = self.data_service.get_last_fetch_time()
+        if ts:
+            self.query_one(CaracalFooter).last_updated = ts
 
     async def _auto_refresh(self) -> None:
         """Auto-refresh from DB cache."""

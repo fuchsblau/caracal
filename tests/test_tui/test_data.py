@@ -165,27 +165,21 @@ class TestRefreshWatchlist:
         assert rows[0]["ticker"] == "AAPL"
 
 
-class TestGetLatestDataDate:
-    def test_returns_none_for_empty_watchlist(self, data_service, storage):
-        storage.create_watchlist("empty")
-        assert data_service.get_latest_data_date("empty") is None
+class TestGetLastFetchTime:
+    def test_returns_none_for_memory_db(self, data_service):
+        assert data_service.get_last_fetch_time() is None
 
-    def test_returns_latest_date(self, data_service, storage):
+    def test_returns_datetime_for_file_db(self, tmp_path):
+        db_file = str(tmp_path / "test.db")
+        config = CaracalConfig(db_path=db_file)
+        storage = DuckDBStorage(db_file)
+        ds = DataService(config, storage=storage)
         storage.create_watchlist("tech")
-        storage.add_to_watchlist("tech", "AAPL")
-        _store_ohlcv(storage, "AAPL", days=5)
-        result = data_service.get_latest_data_date("tech")
-        assert result == str(date.today() - timedelta(days=1))
-
-    def test_returns_max_across_tickers(self, data_service, storage):
-        storage.create_watchlist("mixed")
-        storage.add_to_watchlist("mixed", "AAPL")
-        storage.add_to_watchlist("mixed", "MSFT")
-        _store_ohlcv(storage, "AAPL", days=5)
-        _store_ohlcv(storage, "MSFT", days=10)
-        result = data_service.get_latest_data_date("mixed")
-        # Both end at today-1 (same _store_ohlcv logic)
-        assert result == str(date.today() - timedelta(days=1))
+        result = ds.get_last_fetch_time()
+        assert result is not None
+        # Format: YYYY-MM-DD HH:MM:SS
+        assert len(result) == 19
+        storage.close()
 
 
 class TestGetAppInfo:

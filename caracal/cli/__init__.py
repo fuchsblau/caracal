@@ -3,7 +3,7 @@
 import click
 
 from caracal import __version__
-from caracal.config import load_config
+from caracal.config import ConfigError, load_config
 from caracal.output.human import LOGO
 
 
@@ -34,7 +34,12 @@ class CaracalGroup(click.Group):
 def cli(ctx: click.Context, output_format: str | None, debug: bool) -> None:
     """Automated stock analysis from your terminal."""
     ctx.ensure_object(dict)
-    config = load_config()
+    try:
+        config = load_config()
+    except ConfigError as e:
+        click.echo(click.style(f"Error: {e}", fg="red"), err=True)
+        ctx.exit(1)
+        return
     ctx.obj["config"] = config
     ctx.obj["format"] = output_format or config.default_format
     ctx.obj["debug"] = debug

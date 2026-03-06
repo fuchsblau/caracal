@@ -2,7 +2,13 @@
 
 import pytest
 
-from caracal.config import CONFIG_TEMPLATE, CaracalConfig, load_config, write_config
+from caracal.config import (
+    CONFIG_TEMPLATE,
+    CaracalConfig,
+    ConfigError,
+    load_config,
+    write_config,
+)
 
 
 class TestCaracalConfigDefaults:
@@ -62,19 +68,19 @@ class TestLoadConfig:
     def test_invalid_toml_raises(self, tmp_path):
         config_file = tmp_path / "config.toml"
         config_file.write_text("invalid = [unterminated\n")
-        with pytest.raises(SystemExit):
+        with pytest.raises(ConfigError):
             load_config(config_file)
 
     def test_load_config_warns_invalid_period(self, tmp_path):
         config_file = tmp_path / "config.toml"
         config_file.write_text('default_period = "invalid"\n')
-        with pytest.raises(SystemExit):
+        with pytest.raises(ConfigError):
             load_config(config_file)
 
     def test_load_config_warns_invalid_format(self, tmp_path):
         config_file = tmp_path / "config.toml"
         config_file.write_text('default_format = "xml"\n')
-        with pytest.raises(SystemExit):
+        with pytest.raises(ConfigError):
             load_config(config_file)
 
     def test_load_config_valid_period_accepted(self, tmp_path):
@@ -82,6 +88,32 @@ class TestLoadConfig:
         config_file.write_text('default_period = "6mo"\n')
         config = load_config(config_file)
         assert config.default_period == "6mo"
+
+
+class TestConfigError:
+    def test_invalid_toml_raises_config_error(self, tmp_path):
+        bad_toml = tmp_path / "config.toml"
+        bad_toml.write_text("invalid toml {{{{")
+        with pytest.raises(ConfigError, match="Invalid config"):
+            load_config(bad_toml)
+
+    def test_invalid_period_raises_config_error(self, tmp_path):
+        toml = tmp_path / "config.toml"
+        toml.write_text('default_period = "99y"')
+        with pytest.raises(ConfigError, match="default_period"):
+            load_config(toml)
+
+    def test_invalid_format_raises_config_error(self, tmp_path):
+        toml = tmp_path / "config.toml"
+        toml.write_text('default_format = "xml"')
+        with pytest.raises(ConfigError, match="default_format"):
+            load_config(toml)
+
+    def test_invalid_provider_raises_config_error(self, tmp_path):
+        toml = tmp_path / "config.toml"
+        toml.write_text('default_provider = "nonexistent"')
+        with pytest.raises(ConfigError, match="default_provider"):
+            load_config(toml)
 
 
 class TestConfigTemplate:

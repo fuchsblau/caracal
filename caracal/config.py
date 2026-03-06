@@ -3,12 +3,9 @@
 from __future__ import annotations
 
 import os
-import sys
 import tomllib
 from dataclasses import dataclass, field, fields
 from pathlib import Path
-
-import click
 
 _KNOWN_PROVIDERS = {"yahoo", "massive", "ibkr", "alphavantage", "eodhd", "finnhub"}
 
@@ -17,6 +14,10 @@ CONFIG_PATH = CONFIG_DIR / "config.toml"
 
 VALID_FORMATS = {"human", "json"}
 VALID_PERIODS = {"1y", "6mo", "3mo", "1mo", "5y"}
+
+
+class ConfigError(Exception):
+    """Configuration error."""
 
 
 @dataclass(frozen=True)
@@ -125,7 +126,7 @@ def load_config(path: Path | None = None) -> CaracalConfig:
     """Load configuration from TOML file, merged with defaults.
 
     Missing file returns defaults. Unknown keys are ignored.
-    Invalid TOML syntax exits with an error message.
+    Raises ConfigError on invalid TOML syntax or invalid values.
     Environment variables CARACAL_<PROVIDER>_<KEY> override provider config.
     """
     config_path = path or CONFIG_PATH
@@ -137,34 +138,26 @@ def load_config(path: Path | None = None) -> CaracalConfig:
         raw = config_path.read_bytes()
         data = tomllib.loads(raw.decode())
     except tomllib.TOMLDecodeError as e:
-        click.echo(
-            click.style(f"Error: Invalid config file {config_path}: {e}", fg="red"),
-            err=True,
-        )
-        sys.exit(1)
+        raise ConfigError(f"Invalid config file {config_path}: {e}") from e
 
     # Validate known constrained values before constructing config
     if "default_period" in data and data["default_period"] not in VALID_PERIODS:
-        click.echo(
-            click.style(
-                f"Error: Invalid default_period '{data['default_period']}' "
-                f"in {config_path}. Must be one of: {', '.join(sorted(VALID_PERIODS))}",
-                fg="red",
-            ),
-            err=True,
+        raise ConfigError(
+            f"Invalid default_period '{data['default_period']}' "
+            f"in {config_path}. Must be one of: {', '.join(sorted(VALID_PERIODS))}"
         )
-        sys.exit(1)
 
     if "default_format" in data and data["default_format"] not in VALID_FORMATS:
-        click.echo(
-            click.style(
-                f"Error: Invalid default_format '{data['default_format']}' "
-                f"in {config_path}. Must be one of: {', '.join(sorted(VALID_FORMATS))}",
-                fg="red",
-            ),
-            err=True,
+        raise ConfigError(
+            f"Invalid default_format '{data['default_format']}' "
+            f"in {config_path}. Must be one of: {', '.join(sorted(VALID_FORMATS))}"
         )
-        sys.exit(1)
+
+    if "default_provider" in data and data["default_provider"] not in _KNOWN_PROVIDERS:
+        raise ConfigError(
+            f"Invalid default_provider '{data['default_provider']}' "
+            f"in {config_path}. Must be one of: {', '.join(sorted(_KNOWN_PROVIDERS))}"
+        )
 
     # Extract providers before filtering scalar fields
     providers = dict(data.pop("providers", {}))

@@ -19,9 +19,12 @@ class DuckDBStorage:
         try:
             if db_path != ":memory:":
                 resolved = Path(db_path).expanduser()
-                resolved.parent.mkdir(parents=True, exist_ok=True)
+                resolved.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+                resolved.parent.chmod(0o700)
                 db_path = str(resolved)
             self._conn = duckdb.connect(db_path)
+            if db_path != ":memory:" and resolved.exists():
+                resolved.chmod(0o600)
         except duckdb.Error as e:
             raise StorageError(f"Failed to connect to DuckDB: {e}") from e
         self._init_schema()

@@ -187,3 +187,25 @@ class TestContextManager:
         storage = DuckDBStorage(db_path)
         storage.create_watchlist("test")
         storage.close()
+
+
+class TestFilePermissions:
+    def test_db_file_permissions(self, tmp_path):
+        """Database file should have 0o600 permissions (user-only)."""
+        db_file = tmp_path / "test.db"
+        storage = DuckDBStorage(str(db_file))
+        storage.close()
+
+        assert db_file.exists()
+        mode = db_file.stat().st_mode & 0o777
+        assert mode == 0o600, f"Expected 0o600, got {oct(mode)}"
+
+    def test_db_directory_permissions(self, tmp_path):
+        """Database directory should have 0o700 permissions."""
+        db_dir = tmp_path / "subdir"
+        db_file = db_dir / "test.db"
+        storage = DuckDBStorage(str(db_file))
+        storage.close()
+
+        mode = db_dir.stat().st_mode & 0o777
+        assert mode == 0o700, f"Expected 0o700, got {oct(mode)}"

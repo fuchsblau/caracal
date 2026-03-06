@@ -82,7 +82,7 @@ class WatchlistTable(Widget):
         """Set up columns when the widget is mounted."""
         table = self.query_one(DataTable)
         table.add_columns(
-            " Ticker", " Name", "Price", "Chg%", "Signal", "Conf", "RSI", "MACD", "BB",
+            "Ticker", "Name", "Price", "Chg%", "Signal", "Conf", "RSI", "MACD", "BB",
         )
         # Show hint by default (hidden once load_data adds rows)
         table.display = False
@@ -113,8 +113,8 @@ class WatchlistTable(Widget):
 
     def _format_row(self, row: dict) -> tuple:
         """Format a data row into Rich Text cells."""
-        ticker = Text(f" {row['ticker']}", style="bold")
-        name = Text(f" {row.get('name', row['ticker'])}", style=COLOR_MUTED)
+        ticker = Text(row["ticker"], style="bold")
+        name = Text(row.get("name", row["ticker"]), style=COLOR_MUTED)
 
         if row["close"] is not None:
             price = Text(f"{row['close']:.2f}", style=COLOR_PRICE, justify="right")

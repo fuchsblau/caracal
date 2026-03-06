@@ -80,6 +80,7 @@ WatchlistTable {
 
 WatchlistTable DataTable {
     height: 1fr;
+    padding: 0 1;
 }
 
 DataTable > .datatable--cursor {
@@ -136,14 +137,8 @@ AssetDetailView .section-title {
     color: $primary;
 }
 
-AssetDetailView #indicators-table {
-    height: auto;
-    max-height: 14;
-    margin: 0 2;
-}
-
 AssetDetailView #ohlcv-table {
     height: auto;
-    max-height: 14;
+    max-height: 9;
     margin: 0 2;
 }

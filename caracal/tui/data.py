@@ -268,6 +268,55 @@ class DataService:
         """
         self._storage.remove_from_watchlist(name, ticker)
 
+    # -- Indicator interpretation (ADR-018, US-075) ---------------------------
+
+    def _interpret_indicator(
+        self, key: str, value: float | None, *, close: float, indicators: dict
+    ) -> tuple[str | None, str | None]:
+        """Return (interpretation, detail) for an indicator value."""
+        if value is None:
+            return None, None
+
+        if key in ("sma_20", "sma_50", "ema_12"):
+            if close > value:
+                return "bullish", "Price > indicator"
+            return "bearish", "Price < indicator"
+
+        if key == "rsi_14":
+            rounded = round(value)
+            if value > 70:
+                return "overbought", f"{rounded}\u25b2"
+            if value < 30:
+                return "oversold", f"{rounded}\u25bc"
+            return "neutral", f"{rounded}\u2014"
+
+        if key == "macd":
+            macd_sig = indicators.get("macd_signal")
+            if macd_sig is not None:
+                if value > macd_sig:
+                    return "bullish", "BULL"
+                return "bearish", "BEAR"
+            return None, None
+
+        if key == "macd_signal":
+            return None, None
+
+        if key in ("bollinger_upper", "bollinger_lower"):
+            bb_upper = indicators.get("bollinger_upper")
+            bb_lower = indicators.get("bollinger_lower")
+            if bb_upper is not None and bb_lower is not None:
+                band_width = bb_upper - bb_lower
+                if band_width > 0:
+                    position = (close - bb_lower) / band_width
+                    if position > 1.0:
+                        return "overbought", "\u25b2OB"
+                    if position < 0.0:
+                        return "oversold", "\u25bcOS"
+                    return "neutral", "\u2014OK"
+            return None, None
+
+        return None, None
+
     # -- Stock detail ---------------------------------------------------------
 
     def get_stock_detail(self, ticker: str) -> dict:

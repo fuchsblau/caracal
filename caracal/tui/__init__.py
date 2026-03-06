@@ -83,6 +83,16 @@ class CaracalApp(App):
         await panel.load_watchlists(data)
         if self._watchlist_names:
             self.active_watchlist = self._watchlist_names[0]
+        self._update_footer_from_db()
+
+    def _update_footer_from_db(self) -> None:
+        """Set footer timestamp from the latest OHLCV data date in DB."""
+        name = self.active_watchlist
+        if not name:
+            return
+        latest = self.data_service.get_latest_data_date(name)
+        if latest:
+            self.query_one(CaracalFooter).last_updated = latest
 
     async def _auto_refresh(self) -> None:
         """Auto-refresh from DB cache."""
@@ -94,7 +104,6 @@ class CaracalApp(App):
             return
         rows = self.data_service.get_watchlist_overview(name)
         panel.refresh_watchlist(name, rows)
-        self.query_one(CaracalFooter).last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     def on_tabbed_content_tab_activated(self, event) -> None:
         """Sync active_watchlist when tabs are switched (arrow keys, clicks)."""

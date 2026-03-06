@@ -140,6 +140,19 @@ class DataService:
         """Return all watchlists with name, created_at, ticker_count."""
         return self._storage.get_watchlists()
 
+    def get_latest_data_date(self, name: str) -> str | None:
+        """Return the most recent OHLCV date across all tickers in a watchlist.
+
+        Returns date string (YYYY-MM-DD) or None if no data.
+        """
+        tickers = self._storage.get_watchlist_items(name)
+        latest = None
+        for ticker in tickers:
+            d = self._storage.get_latest_date(ticker)
+            if d is not None and (latest is None or d > latest):
+                latest = d
+        return str(latest) if latest else None
+
     def refresh_watchlist(self, name: str) -> list[dict]:
         """Re-read watchlist data from storage (no provider fetch).
 

@@ -504,7 +504,7 @@ class TestCalculateVoteCounts:
 
 
 class TestGetStockDetailExtended:
-    """Test extended get_stock_detail with indicator_groups, vote_counts, 5-day OHLCV."""
+    """Test extended get_stock_detail with groups, votes, 5d OHLCV."""
 
     def _store_60_days(self, storage, ticker="AAPL"):
         df = pd.DataFrame({
@@ -531,7 +531,7 @@ class TestGetStockDetailExtended:
         categories = [g["category"] for g in detail["indicator_groups"]]
         assert categories == ["Trend", "Momentum", "Volatility"]
 
-    def test_indicator_group_has_indicators_with_interpretation(self, data_service, storage):
+    def test_indicator_group_has_interpretation(self, data_service, storage):
         self._store_60_days(storage)
         detail = data_service.get_stock_detail("AAPL")
         trend = detail["indicator_groups"][0]

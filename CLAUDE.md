@@ -22,3 +22,9 @@ Caracal is a CLI tool for automated stock analysis. It fetches market data, pers
 - Code language: English (variables, comments, commits)
 - Source layout: `caracal/` (flat layout) with subpackages (cli, providers, storage, indicators, analysis, output)
 - Tests mirror source structure under `tests/`
+
+## Security
+
+For security reviews, use the Security Agent from the documentation repo (`~/Work/caracal/`):
+- Command: `/security`
+- Output: `SR-NNN` documents in `~/Work/caracal/documentation/security/`

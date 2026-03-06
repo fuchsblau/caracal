@@ -32,6 +32,15 @@ WatchlistPanel {
     height: 1fr;
 }
 
+Tab.-active {
+    text-style: bold;
+    color: #00bcd4;
+}
+
+Tab {
+    color: $text-muted;
+}
+
 WatchlistTable {
     height: 1fr;
 }

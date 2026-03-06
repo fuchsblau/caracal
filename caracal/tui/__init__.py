@@ -31,7 +31,6 @@ class CaracalApp(App):
         Binding("r", "refresh_live", "Refresh"),
         Binding("c", "create_watchlist", "Create"),
         Binding("d", "delete_watchlist", "Delete"),
-        Binding("w", "select_watchlist", "Watchlists"),
         Binding("a", "add_ticker", "Add"),
         Binding("x", "remove_ticker", "Remove"),
         Binding("1", "switch_tab('1')", "Tab 1", show=False),
@@ -204,23 +203,6 @@ class CaracalApp(App):
         await self._load_all_watchlists()
         if not self._watchlist_names:
             self.active_watchlist = None
-
-    def action_select_watchlist(self) -> None:
-        if not self._watchlist_names:
-            return
-        watchlists = self.data_service.get_watchlists()
-        from caracal.tui.screens.watchlist_selector import WatchlistSelectorModal
-
-        self.push_screen(
-            WatchlistSelectorModal(watchlists, self.active_watchlist),
-            self._on_select_result,
-        )
-
-    def _on_select_result(self, name: str | None) -> None:
-        if name is None:
-            return
-        idx = self._watchlist_names.index(name)
-        self.action_switch_tab(str(idx + 1))
 
     def action_add_ticker(self) -> None:
         if not self.active_watchlist:

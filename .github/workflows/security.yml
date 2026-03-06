@@ -1,0 +1,34 @@
+name: Security
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  bandit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv tool run bandit -r caracal/ -f json -o bandit-results.json || true
+      - run: uv tool run bandit -r caracal/ -ll
+    continue-on-error: true
+
+  dependency-audit:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync
+      - run: uv tool run pip-audit
+    continue-on-error: true
+
+  secrets-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+      - run: uv tool run detect-secrets scan --all-files --exclude-files '\.git/.*' | python -c "import sys,json; r=json.load(sys.stdin); results=r.get('results',{}); print(f'Found {sum(len(v) for v in results.values())} potential secrets in {len(results)} files') if results else print('No secrets detected'); sys.exit(1 if results else 0)"
+    continue-on-error: true

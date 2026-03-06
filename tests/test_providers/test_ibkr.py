@@ -1,5 +1,6 @@
 """Tests for Interactive Brokers market data provider."""
 
+import logging
 import sys
 from datetime import date
 from types import ModuleType
@@ -147,6 +148,80 @@ class TestIBKRProvider:
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
         assert "162" not in str(exc_info.value)
         assert "not subscribed" not in str(exc_info.value)
+
+    def test_fetch_ohlcv_error_no_traceback_in_message(self):
+        """ProviderError message must not contain raw traceback text."""
+        from caracal.providers.ibkr import IBKRProvider
+
+        mock_ib = MagicMock()
+        mock_ib.isConnected.return_value = True
+        mock_ib.reqHistoricalData.side_effect = RuntimeError(
+            "Traceback (most recent call last):\n  File ib_async/client.py"
+        )
+
+        provider = IBKRProvider()
+        provider._ib = mock_ib
+
+        with pytest.raises(ProviderError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
+        msg = str(exc_info.value)
+        assert "Traceback" not in msg
+        assert "ib_async" not in msg
+
+    def test_fetch_ohlcv_error_logs_debug_details(self, caplog):
+        """Original exception details should be logged at DEBUG level."""
+        from caracal.providers.ibkr import IBKRProvider
+
+        mock_ib = MagicMock()
+        mock_ib.isConnected.return_value = True
+        mock_ib.reqHistoricalData.side_effect = ValueError(
+            "internal ib_async error"
+        )
+
+        provider = IBKRProvider()
+        provider._ib = mock_ib
+
+        with caplog.at_level(logging.DEBUG, logger="caracal"):
+            with pytest.raises(ProviderError):
+                provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
+        assert any("AAPL" in r.message for r in caplog.records)
+
+    def test_connect_non_connection_refused_error(self):
+        """_connect must catch all exceptions, not just ConnectionRefusedError."""
+        from caracal.providers.ibkr import IBKRProvider
+
+        mock_ib = MagicMock()
+        mock_ib.isConnected.return_value = False
+        mock_ib.connect.side_effect = OSError(
+            "Network is unreachable at 10.0.0.1:7497"
+        )
+
+        provider = IBKRProvider()
+        provider._ib = mock_ib
+
+        with pytest.raises(ProviderError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 3))
+        msg = str(exc_info.value)
+        assert "10.0.0.1" not in msg
+        assert "unreachable" not in msg.lower()
+
+    def test_connect_timeout_error(self):
+        """_connect must catch TimeoutError and wrap it."""
+        from caracal.providers.ibkr import IBKRProvider
+
+        mock_ib = MagicMock()
+        mock_ib.isConnected.return_value = False
+        mock_ib.connect.side_effect = TimeoutError(
+            "Connection timed out to 192.168.1.100:4001"
+        )
+
+        provider = IBKRProvider()
+        provider._ib = mock_ib
+
+        with pytest.raises(ProviderError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 3))
+        msg = str(exc_info.value)
+        assert "192.168.1.100" not in msg
 
     def test_connection_reuse(self):
         from caracal.providers.ibkr import IBKRProvider

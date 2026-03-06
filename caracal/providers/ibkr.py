@@ -1,10 +1,13 @@
 """Interactive Brokers market data provider via ib_async."""
 
+import logging
 from datetime import date
 
 import pandas as pd
 
 from caracal.providers.types import ProviderError, TickerNotFoundError
+
+logger = logging.getLogger("caracal")
 
 try:
     from ib_async import IB, Stock, util
@@ -40,7 +43,13 @@ class IBKRProvider:
                 self._ib.connect(
                     self._host, self._port, clientId=self._client_id
                 )
-            except ConnectionRefusedError:
+            except Exception:
+                logger.debug(
+                    "IBKR connection error for %s:%s",
+                    self._host,
+                    self._port,
+                    exc_info=True,
+                )
                 raise ProviderError(
                     f"Cannot connect to TWS/Gateway at "
                     f"{self._host}:{self._port}. "
@@ -70,6 +79,7 @@ class IBKRProvider:
                 formatDate=1,
             )
         except Exception:
+            logger.debug("Provider error details for %s", ticker, exc_info=True)
             raise ProviderError(
                 f"Failed to fetch data for {ticker}"
             ) from None

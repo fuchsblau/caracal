@@ -1,10 +1,13 @@
 """Massive.com (formerly Polygon.io) market data provider."""
 
+import logging
 from datetime import UTC, date, datetime
 
 import pandas as pd
 
 from caracal.providers.types import ProviderError, TickerNotFoundError
+
+logger = logging.getLogger("caracal")
 
 try:
     from massive import RESTClient
@@ -47,6 +50,7 @@ class MassiveProvider:
                 adjusted=True,
             ))
         except Exception:
+            logger.debug("Provider error details for %s", ticker, exc_info=True)
             raise ProviderError(
                 f"Failed to fetch data for {ticker}"
             ) from None

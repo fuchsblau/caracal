@@ -8,6 +8,8 @@ import yfinance as yf
 
 from caracal.providers.types import ProviderError, TickerNotFoundError
 
+logger = logging.getLogger("caracal")
+
 # Suppress noisy yfinance warnings (e.g. "possibly delisted")
 logging.getLogger("yfinance").setLevel(logging.CRITICAL)
 
@@ -33,6 +35,7 @@ class YahooProvider:
                 progress=False,
             )
         except Exception:
+            logger.debug("Provider error details for %s", ticker, exc_info=True)
             raise ProviderError(f"Failed to fetch data for {ticker}") from None
 
         if df.empty:

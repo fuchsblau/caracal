@@ -1,5 +1,6 @@
 """Tests for Massive.com market data provider."""
 
+import logging
 import sys
 from datetime import date
 from types import ModuleType
@@ -112,6 +113,37 @@ class TestMassiveProvider:
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
         assert "CERTIFICATE_VERIFY" not in str(exc_info.value)
         assert "/usr/lib" not in str(exc_info.value)
+
+    @patch("caracal.providers.massive.RESTClient")
+    def test_fetch_ohlcv_error_no_traceback_in_message(self, mock_client_cls):
+        """ProviderError message must not contain raw traceback text."""
+        mock_client = mock_client_cls.return_value
+        mock_client.list_aggs.side_effect = RuntimeError(
+            "Traceback (most recent call last):\n  File requests/adapters.py"
+        )
+
+        from caracal.providers.massive import MassiveProvider
+
+        provider = MassiveProvider(api_key="pk_test")
+        with pytest.raises(ProviderError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
+        msg = str(exc_info.value)
+        assert "Traceback" not in msg
+        assert "adapters" not in msg
+
+    @patch("caracal.providers.massive.RESTClient")
+    def test_fetch_ohlcv_error_logs_debug_details(self, mock_client_cls, caplog):
+        """Original exception details should be logged at DEBUG level."""
+        mock_client = mock_client_cls.return_value
+        mock_client.list_aggs.side_effect = ValueError("internal API error")
+
+        from caracal.providers.massive import MassiveProvider
+
+        provider = MassiveProvider(api_key="pk_test")
+        with caplog.at_level(logging.DEBUG, logger="caracal"):
+            with pytest.raises(ProviderError):
+                provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
+        assert any("AAPL" in r.message for r in caplog.records)
 
     @patch("caracal.providers.massive.RESTClient")
     def test_validate_ticker_valid(self, mock_client_cls):

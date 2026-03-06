@@ -1,3 +1,4 @@
+import logging
 from datetime import date
 from unittest.mock import MagicMock, patch
 
@@ -60,6 +61,29 @@ class TestYahooProvider:
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
         assert "internal-proxy" not in str(exc_info.value)
         assert "8080" not in str(exc_info.value)
+
+    @patch("caracal.providers.yahoo.yf.download")
+    def test_fetch_ohlcv_error_no_traceback_in_message(self, mock_download):
+        """ProviderError message must not contain raw traceback text."""
+        mock_download.side_effect = RuntimeError(
+            "Traceback (most recent call last):\n  File yfinance/base.py"
+        )
+        provider = YahooProvider()
+        with pytest.raises(ProviderError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
+        msg = str(exc_info.value)
+        assert "Traceback" not in msg
+        assert "yfinance" not in msg
+
+    @patch("caracal.providers.yahoo.yf.download")
+    def test_fetch_ohlcv_error_logs_debug_details(self, mock_download, caplog):
+        """Original exception details should be logged at DEBUG level."""
+        mock_download.side_effect = ValueError("some internal yfinance error")
+        provider = YahooProvider()
+        with caplog.at_level(logging.DEBUG, logger="caracal"):
+            with pytest.raises(ProviderError):
+                provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 12, 31))
+        assert any("AAPL" in r.message for r in caplog.records)
 
     @patch("caracal.providers.yahoo.yf.Ticker")
     def test_validate_ticker_valid(self, mock_ticker_cls):

@@ -71,7 +71,11 @@ class WatchlistTable(Widget):
 
     def compose(self):
         """Compose the widget with an inner DataTable."""
-        yield DataTable(cursor_type="row", zebra_stripes=True)
+        yield DataTable(
+            cursor_type="row",
+            zebra_stripes=True,
+            cursor_foreground_priority="renderable",
+        )
         yield Static("No tickers yet — press [bold]a[/] to add", id="empty-hint")
 
     def on_mount(self) -> None:

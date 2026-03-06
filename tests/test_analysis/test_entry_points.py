@@ -289,3 +289,34 @@ class TestRuleBollinger:
         bollinger = pd.DataFrame({"lower": [90.0], "upper": [110.0]})
         _rule_bollinger(signals, 100.0, bollinger)
         assert signals == [pytest.approx(0.5)]
+
+
+class TestIncludeScores:
+    def test_scores_not_included_by_default(self, bullish_data):
+        result = calculate_entry_signal(bullish_data)
+        assert "scores" not in result
+
+    def test_scores_included_when_requested(self, bullish_data):
+        result = calculate_entry_signal(bullish_data, include_scores=True)
+        assert "scores" in result
+        assert isinstance(result["scores"], list)
+        assert len(result["scores"]) == 5  # 5 rules
+
+    def test_scores_are_floats(self, bullish_data):
+        result = calculate_entry_signal(bullish_data, include_scores=True)
+        for score in result["scores"]:
+            assert isinstance(score, float)
+
+    def test_scores_empty_for_insufficient_data(self):
+        df = pd.DataFrame(
+            {
+                "date": [date(2024, 1, 1)],
+                "open": [100.0],
+                "high": [105.0],
+                "low": [99.0],
+                "close": [104.0],
+                "volume": [1000000],
+            }
+        )
+        result = calculate_entry_signal(df, include_scores=True)
+        assert result.get("scores") is None or result.get("scores") == []

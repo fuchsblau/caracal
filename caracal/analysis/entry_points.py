@@ -14,13 +14,19 @@ from caracal.output.precision import PERCENT_DECIMALS
 _EMPTY_RESULT: dict[str, Any] = {"signal": "hold", "confidence": 0.0, "indicators": {}}
 
 
-def calculate_entry_signal(df: pd.DataFrame) -> dict[str, Any]:
+def calculate_entry_signal(
+    df: pd.DataFrame, *, include_scores: bool = False
+) -> dict[str, Any]:
     """Calculate entry signal based on technical indicators.
 
-    Returns dict with keys: signal, confidence, indicators
+    Returns dict with keys: signal, confidence, indicators.
+    If include_scores=True, also returns 'scores' (list[float] of individual rule scores).
     """
     if len(df) < 30:
-        return dict(_EMPTY_RESULT)
+        result = dict(_EMPTY_RESULT)
+        if include_scores:
+            result["scores"] = []
+        return result
 
     sma_20 = SMAIndicator(20).calculate(df)
     sma_50 = SMAIndicator(50).calculate(df)
@@ -33,7 +39,10 @@ def calculate_entry_signal(df: pd.DataFrame) -> dict[str, Any]:
     signals = _collect_signals(latest_close, sma_20, sma_50, rsi, macd_df, bollinger)
 
     if not signals:
-        return dict(_EMPTY_RESULT)
+        result = dict(_EMPTY_RESULT)
+        if include_scores:
+            result["scores"] = []
+        return result
 
     avg_signal = sum(signals) / len(signals)
     confidence = min(abs(avg_signal), 1.0)
@@ -50,11 +59,14 @@ def calculate_entry_signal(df: pd.DataFrame) -> dict[str, Any]:
         "bollinger_lower": _safe_val(bollinger["lower"].iloc[-1]),
     }
 
-    return {
+    result = {
         "signal": signal,
         "confidence": round(confidence, PERCENT_DECIMALS),
         "indicators": indicators,
     }
+    if include_scores:
+        result["scores"] = signals
+    return result
 
 
 def _collect_signals(

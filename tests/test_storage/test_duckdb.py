@@ -3,6 +3,15 @@ from datetime import date
 import pandas as pd
 
 from caracal.storage.duckdb import DuckDBStorage
+from caracal.storage import OHLCVStorageProtocol, WatchlistStorageProtocol
+
+
+class TestProtocolCompliance:
+    def test_duckdb_satisfies_ohlcv_protocol(self, storage):
+        assert isinstance(storage, OHLCVStorageProtocol)
+
+    def test_duckdb_satisfies_watchlist_protocol(self, storage):
+        assert isinstance(storage, WatchlistStorageProtocol)
 
 
 class TestStoreAndGetOHLCV:

@@ -111,12 +111,12 @@ def test_format_rsi_none():
 
 def test_format_macd_bull():
     text = format_macd("bull")
-    assert "BULL" in str(text)
+    assert "bull" in str(text)
 
 
 def test_format_macd_bear():
     text = format_macd("bear")
-    assert "BEAR" in str(text)
+    assert "bear" in str(text)
 
 
 def test_format_macd_none():

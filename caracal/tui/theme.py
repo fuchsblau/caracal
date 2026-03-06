@@ -81,34 +81,34 @@ def format_trend(value: float | None, close: float | None) -> Text:
 
 
 def format_rsi(value: float | None) -> Text:
-    """Format RSI as interpreted signal: 72▲ / 28▼ / 50—."""
+    """Format RSI as value + signal symbol: 72 ▲ / 28 ▼ / 50 —."""
     if value is None:
         return Text("N/A", style=COLOR_MUTED, justify="right")
     rounded = round(value)
     if value > 70:
-        return Text(f"{rounded}\u25b2", style=COLOR_OVERBOUGHT, justify="right")
+        return Text(f"{rounded} \u25b2", style=COLOR_OVERBOUGHT, justify="right")
     if value < 30:
-        return Text(f"{rounded}\u25bc", style=COLOR_OVERSOLD, justify="right")
-    return Text(f"{rounded}\u2014", style=COLOR_NEUTRAL, justify="right")
+        return Text(f"{rounded} \u25bc", style=COLOR_OVERSOLD, justify="right")
+    return Text(f"{rounded} \u2014", style=COLOR_NEUTRAL, justify="right")
 
 
 def format_macd(interpretation: str | None) -> Text:
-    """Format MACD as BULL/BEAR signal."""
+    """Format MACD as symbol + label: ▲ bull / ▼ bear."""
     if interpretation is None:
         return Text("N/A", style=COLOR_MUTED, justify="right")
     if interpretation == "bull":
-        return Text("BULL", style=f"bold {COLOR_POSITIVE}", justify="right")
-    return Text("BEAR", style=f"bold {COLOR_NEGATIVE}", justify="right")
+        return Text("\u25b2 bull", style=f"bold {COLOR_POSITIVE}", justify="right")
+    return Text("\u25bc bear", style=f"bold {COLOR_NEGATIVE}", justify="right")
 
 
 def format_bb(position: str | None) -> Text:
-    """Format Bollinger Band position: ▲OB / ▼OS / —OK."""
+    """Format Bollinger Band position: ▲ OB / ▼ OS / — OK."""
     if position is None:
         return Text("N/A", style=COLOR_MUTED, justify="right")
     styles = {
-        "overbought": ("\u25b2OB", COLOR_OVERBOUGHT),
-        "oversold": ("\u25bcOS", COLOR_OVERSOLD),
-        "neutral": ("\u2014OK", COLOR_NEUTRAL),
+        "overbought": ("\u25b2 OB", COLOR_OVERBOUGHT),
+        "oversold": ("\u25bc OS", COLOR_OVERSOLD),
+        "neutral": ("\u2014 OK", COLOR_NEUTRAL),
     }
     label, color = styles.get(position, ("N/A", COLOR_MUTED))
     return Text(label, style=color, justify="right")

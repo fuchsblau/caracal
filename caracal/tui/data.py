@@ -2,11 +2,15 @@
 
 from __future__ import annotations
 
+import logging
+
 from caracal import __version__
 from caracal.analysis.entry_points import calculate_entry_signal
 from caracal.config import CONFIG_PATH, CaracalConfig
 from caracal.output.precision import PERCENT_DECIMALS, PRICE_DECIMALS
 from caracal.storage.duckdb import DuckDBStorage
+
+logger = logging.getLogger("caracal")
 
 # -- Indicator Category Registry (ADR-018, NF-022) ----------------------------
 
@@ -216,9 +220,15 @@ class DataService:
                     if not df.empty:
                         self._storage.store_ohlcv(ticker, df)
                 except Exception:
-                    pass  # Keep cached data on provider failure
+                    logger.warning(
+                        "Failed to fetch %s, using cached data",
+                        ticker,
+                        exc_info=True,
+                    )
         except Exception:
-            pass  # Fall back to cached data if provider unavailable
+            logger.warning(
+                "Provider unavailable, using cached data", exc_info=True
+            )
 
         # Cache company names independently of provider fetch
         self._fetch_ticker_names(tickers)
@@ -230,6 +240,7 @@ class DataService:
         try:
             import yfinance as yf
         except ImportError:
+            logger.debug("yfinance not installed, skipping ticker name fetch")
             return
         for ticker in tickers:
             if self._storage.get_ticker_name(ticker):
@@ -240,7 +251,9 @@ class DataService:
                 if name:
                     self._storage.store_ticker_name(ticker, name)
             except Exception:
-                pass
+                logger.debug(
+                    "Failed to fetch name for %s", ticker, exc_info=True
+                )
 
     def add_to_watchlist(
         self, name: str, tickers: list[str]

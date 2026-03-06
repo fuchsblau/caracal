@@ -1,5 +1,6 @@
 """Tests for TUI DataService."""
 
+import logging
 from datetime import date, timedelta
 
 import pandas as pd
@@ -572,3 +573,68 @@ class TestGetStockDetailExtended:
         self._store_60_days(storage)
         detail = data_service.get_stock_detail("AAPL")
         assert "indicators" in detail
+
+
+class TestExceptionLogging:
+    def test_refresh_live_logs_provider_failure(
+        self, data_service, storage, caplog, monkeypatch
+    ):
+        """Provider failure should log warning, not silently pass."""
+        storage.create_watchlist("test")
+        storage.add_to_watchlist("test", "AAPL")
+        _store_ohlcv(storage, "AAPL", days=5)
+
+        # Force get_provider to raise so the outer except is triggered
+        def _broken_get_provider(*args, **kwargs):
+            raise RuntimeError("provider unavailable")
+
+        monkeypatch.setattr(
+            "caracal.providers.get_provider", _broken_get_provider
+        )
+        with caplog.at_level(logging.WARNING, logger="caracal"):
+            data_service.refresh_watchlist_live("test")
+        assert any(
+            "provider" in r.message.lower() or "fetch" in r.message.lower()
+            for r in caplog.records
+        )
+
+    def test_refresh_live_logs_per_ticker_failure(
+        self, data_service, storage, caplog, monkeypatch
+    ):
+        """Per-ticker fetch failure should log warning."""
+        storage.create_watchlist("test")
+        storage.add_to_watchlist("test", "AAPL")
+        _store_ohlcv(storage, "AAPL", days=5)
+
+        class _BrokenProvider:
+            def fetch_ohlcv(self, ticker, start, end):
+                raise RuntimeError("network error")
+
+        monkeypatch.setattr(
+            "caracal.providers.get_provider", lambda *a, **kw: _BrokenProvider()
+        )
+        with caplog.at_level(logging.WARNING, logger="caracal"):
+            data_service.refresh_watchlist_live("test")
+        assert any(
+            "fetch" in r.message.lower() for r in caplog.records
+        )
+
+    def test_fetch_ticker_names_logs_import_error(
+        self, data_service, caplog, monkeypatch
+    ):
+        """Missing yfinance should log, not silently return."""
+        import builtins
+
+        real_import = builtins.__import__
+
+        def _block_yfinance(name, *args, **kwargs):
+            if name == "yfinance":
+                raise ImportError("No module named 'yfinance'")
+            return real_import(name, *args, **kwargs)
+
+        monkeypatch.setattr(builtins, "__import__", _block_yfinance)
+        with caplog.at_level(logging.DEBUG, logger="caracal"):
+            data_service._fetch_ticker_names(["AAPL"])
+        assert any(
+            "yfinance" in r.message.lower() for r in caplog.records
+        )

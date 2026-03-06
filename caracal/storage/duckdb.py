@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import logging
 from datetime import date
 from pathlib import Path
 from types import TracebackType
@@ -10,6 +11,8 @@ import duckdb
 import pandas as pd
 
 from caracal.providers.types import StorageError
+
+logger = logging.getLogger("caracal")
 
 
 class DuckDBStorage:
@@ -289,7 +292,9 @@ class DuckDBStorage:
                 [ticker, name],
             )
         except duckdb.Error:
-            pass  # Best-effort cache — don't fail on metadata
+            logger.debug(
+                "Failed to cache ticker name for %s", ticker, exc_info=True
+            )
 
     # -- lifecycle --------------------------------------------------------
 

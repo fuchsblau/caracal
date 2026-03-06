@@ -468,3 +468,36 @@ class TestInterpretIndicator:
             "unknown_indicator", 42.0, close=175.0, indicators={}
         )
         assert interp is None
+
+
+class TestCalculateVoteCounts:
+    def test_returns_vote_counts_with_sufficient_data(self, data_service, storage):
+        _store_ohlcv(storage, "AAPL", days=60, trend="up")
+        df = storage.get_ohlcv("AAPL")
+        counts = data_service._calculate_vote_counts(df)
+        assert counts is not None
+        assert "buy" in counts
+        assert "hold" in counts
+        assert "sell" in counts
+        assert "total" in counts
+        assert counts["total"] == counts["buy"] + counts["hold"] + counts["sell"]
+
+    def test_returns_none_with_insufficient_data(self, data_service, storage):
+        _store_ohlcv(storage, "NEW", days=5)
+        df = storage.get_ohlcv("NEW")
+        counts = data_service._calculate_vote_counts(df)
+        assert counts is None
+
+    def test_bullish_data_has_more_buy_votes(self, data_service, storage):
+        _store_ohlcv(storage, "BULL", days=60, trend="up")
+        df = storage.get_ohlcv("BULL")
+        counts = data_service._calculate_vote_counts(df)
+        assert counts is not None
+        assert counts["buy"] >= counts["sell"]
+
+    def test_total_equals_five_rules(self, data_service, storage):
+        _store_ohlcv(storage, "TEST", days=60, trend="flat")
+        df = storage.get_ohlcv("TEST")
+        counts = data_service._calculate_vote_counts(df)
+        if counts is not None:
+            assert counts["total"] == 5

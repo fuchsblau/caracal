@@ -317,6 +317,21 @@ class DataService:
 
         return None, None
 
+    # -- Vote counts (US-076) ------------------------------------------------
+
+    def _calculate_vote_counts(self, df) -> dict | None:
+        """Count buy/hold/sell votes from individual rule scores."""
+        if len(df) < 30:
+            return None
+        result = calculate_entry_signal(df, include_scores=True)
+        scores = result.get("scores", [])
+        if not scores:
+            return None
+        buy = sum(1 for s in scores if s > 0.2)
+        sell = sum(1 for s in scores if s < -0.2)
+        hold = sum(1 for s in scores if -0.2 <= s <= 0.2)
+        return {"buy": buy, "hold": hold, "sell": sell, "total": len(scores)}
+
     # -- Stock detail ---------------------------------------------------------
 
     def get_stock_detail(self, ticker: str) -> dict:

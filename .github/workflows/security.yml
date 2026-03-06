@@ -6,8 +6,8 @@ on:
   pull_request:
     branches: [main]
 
-# NOTE: All jobs use continue-on-error: true for soft launch (non-blocking).
-# TODO: Remove continue-on-error from secrets-scan once baseline is established.
+# Blocking jobs: bandit, dependency-audit (failures prevent merge).
+# Non-blocking: secrets-scan (continue-on-error until baseline is established).
 jobs:
   bandit:
     runs-on: ubuntu-latest
@@ -15,7 +15,6 @@ jobs:
       - uses: actions/checkout@v4
       - uses: astral-sh/setup-uv@v5
       - run: uv tool run bandit -r caracal/ -ll
-    continue-on-error: true
 
   dependency-audit:
     runs-on: ubuntu-latest
@@ -24,7 +23,6 @@ jobs:
       - uses: astral-sh/setup-uv@v5
       - run: uv sync
       - run: uv run pip-audit
-    continue-on-error: true
 
   secrets-scan:
     runs-on: ubuntu-latest

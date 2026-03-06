@@ -47,6 +47,10 @@ Tabs:focus #tabs-list > Tab.-active {
     background: #00bcd4 20%;
 }
 
+Underline > .underline--bar {
+    color: #00bcd4;
+}
+
 WatchlistTable {
     height: 1fr;
 }

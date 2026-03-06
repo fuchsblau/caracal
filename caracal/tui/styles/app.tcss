@@ -11,6 +11,15 @@ Header, Header.-tall {
     color: #ffffff;
 }
 
+HeaderTitle {
+    content-align: left middle;
+    color: #ffffff;
+}
+
+HeaderIcon {
+    color: #ffffff;
+}
+
 Footer {
     dock: bottom;
     align-horizontal: right;

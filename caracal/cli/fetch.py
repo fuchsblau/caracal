@@ -71,7 +71,6 @@ def fetch(
 
         df = prov.fetch_ohlcv(ticker, start_date, end_date)
         count = storage.store_ohlcv(ticker, df)
-        _cache_ticker_name(storage, ticker)
         _output_fetch_result(output_format, count, ticker, meta, df=df)
     except TickerNotFoundError:
         _handle_ticker_not_found(ctx, output_format, ticker, meta, latest)
@@ -82,6 +81,7 @@ def fetch(
         _output_error(output_format, "STORAGE_ERROR", str(e), meta)
         ctx.exit(1)
     finally:
+        _cache_ticker_name(storage, ticker)
         storage.close()
 
 

@@ -1,5 +1,8 @@
 """Tests for TUI theme constants and Textual Theme object."""
 
+import pytest
+from textual.theme import Theme
+
 from caracal.tui.theme import (
     CARACAL_THEME,
     COLOR_NEGATIVE,
@@ -19,57 +22,32 @@ from caracal.tui.theme import (
 
 # -- CARACAL_THEME (Textual Theme object) -------------------------------------
 
+EXPECTED_COLORS = {
+    "primary": "#56b6c2",
+    "secondary": "#3d8b94",
+    "accent": "#c678dd",
+    "foreground": "#abb2bf",
+    "background": "#1e2127",
+    "surface": "#282c34",
+    "panel": "#2c313a",
+    "warning": "#e5c07b",
+    "error": "#e06c75",
+    "success": "#98c379",
+}
 
-def test_caracal_theme_exists():
-    assert CARACAL_THEME is not None
+
+def test_caracal_theme_is_textual_theme():
+    assert isinstance(CARACAL_THEME, Theme)
 
 
-def test_caracal_theme_name():
+def test_caracal_theme_name_and_mode():
     assert CARACAL_THEME.name == "caracal"
-
-
-def test_caracal_theme_dark():
     assert CARACAL_THEME.dark is True
 
 
-def test_caracal_theme_primary():
-    assert CARACAL_THEME.primary == "#56b6c2"
-
-
-def test_caracal_theme_secondary():
-    assert CARACAL_THEME.secondary == "#3d8b94"
-
-
-def test_caracal_theme_accent():
-    assert CARACAL_THEME.accent == "#c678dd"
-
-
-def test_caracal_theme_foreground():
-    assert CARACAL_THEME.foreground == "#abb2bf"
-
-
-def test_caracal_theme_background():
-    assert CARACAL_THEME.background == "#1e2127"
-
-
-def test_caracal_theme_surface():
-    assert CARACAL_THEME.surface == "#282c34"
-
-
-def test_caracal_theme_panel():
-    assert CARACAL_THEME.panel == "#2c313a"
-
-
-def test_caracal_theme_warning():
-    assert CARACAL_THEME.warning == "#e5c07b"
-
-
-def test_caracal_theme_error():
-    assert CARACAL_THEME.error == "#e06c75"
-
-
-def test_caracal_theme_success():
-    assert CARACAL_THEME.success == "#98c379"
+@pytest.mark.parametrize("attr,expected", EXPECTED_COLORS.items())
+def test_caracal_theme_color(attr, expected):
+    assert getattr(CARACAL_THEME, attr) == expected
 
 
 def test_signal_colors_cover_all_signals():

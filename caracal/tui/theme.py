@@ -7,16 +7,16 @@ from textual.theme import Theme
 
 CARACAL_THEME = Theme(
     name="caracal",
-    primary="#56b6c2",
-    secondary="#3d8b94",
-    accent="#c678dd",
-    foreground="#abb2bf",
-    background="#1e2127",
-    surface="#282c34",
-    panel="#2c313a",
-    warning="#e5c07b",
-    error="#e06c75",
-    success="#98c379",
+    primary="#56b6c2",      # Desaturated cyan (One Dark-inspired)
+    secondary="#3d8b94",    # Muted teal
+    accent="#c678dd",       # Purple/mauve contrast accent
+    foreground="#abb2bf",   # Warm grey
+    background="#1e2127",   # Dark background
+    surface="#282c34",      # Widget backgrounds
+    panel="#2c313a",        # Panel/container
+    warning="#e5c07b",      # Muted gold
+    error="#e06c75",        # Soft red
+    success="#98c379",      # Soft green
     dark=True,
 )
 

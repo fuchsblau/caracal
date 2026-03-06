@@ -501,3 +501,70 @@ class TestCalculateVoteCounts:
         counts = data_service._calculate_vote_counts(df)
         if counts is not None:
             assert counts["total"] == 5
+
+
+class TestGetStockDetailExtended:
+    """Test extended get_stock_detail with indicator_groups, vote_counts, 5-day OHLCV."""
+
+    def _store_60_days(self, storage, ticker="AAPL"):
+        df = pd.DataFrame({
+            "date": pd.to_datetime(
+                [f"2024-01-{d:02d}" for d in range(1, 32)]
+                + [f"2024-02-{d:02d}" for d in range(1, 30)]
+            ),
+            "open": [150.0 + i for i in range(60)],
+            "high": [155.0 + i for i in range(60)],
+            "low": [149.0 + i for i in range(60)],
+            "close": [153.0 + i for i in range(60)],
+            "volume": [1000000 + i * 1000 for i in range(60)],
+        })
+        storage.store_ohlcv(ticker, df)
+
+    def test_indicator_groups_present(self, data_service, storage):
+        self._store_60_days(storage)
+        detail = data_service.get_stock_detail("AAPL")
+        assert "indicator_groups" in detail
+
+    def test_indicator_groups_ordered_by_category(self, data_service, storage):
+        self._store_60_days(storage)
+        detail = data_service.get_stock_detail("AAPL")
+        categories = [g["category"] for g in detail["indicator_groups"]]
+        assert categories == ["Trend", "Momentum", "Volatility"]
+
+    def test_indicator_group_has_indicators_with_interpretation(self, data_service, storage):
+        self._store_60_days(storage)
+        detail = data_service.get_stock_detail("AAPL")
+        trend = detail["indicator_groups"][0]
+        assert trend["category"] == "Trend"
+        for ind in trend["indicators"]:
+            assert "name" in ind
+            assert "key" in ind
+            assert "value" in ind
+            assert "interpretation" in ind
+            assert "detail" in ind
+
+    def test_vote_counts_present(self, data_service, storage):
+        self._store_60_days(storage)
+        detail = data_service.get_stock_detail("AAPL")
+        assert "vote_counts" in detail
+        vc = detail["vote_counts"]
+        assert "buy" in vc
+        assert "hold" in vc
+        assert "sell" in vc
+        assert "total" in vc
+
+    def test_ohlcv_limited_to_5_days(self, data_service, storage):
+        self._store_60_days(storage)
+        detail = data_service.get_stock_detail("AAPL")
+        assert len(detail["ohlcv"]) == 5
+
+    def test_empty_data_returns_empty_groups(self, data_service):
+        detail = data_service.get_stock_detail("UNKNOWN")
+        assert detail["indicator_groups"] == []
+        assert detail["vote_counts"] is None
+        assert detail["ohlcv"] == []
+
+    def test_backwards_compat_indicators_key_present(self, data_service, storage):
+        self._store_60_days(storage)
+        detail = data_service.get_stock_detail("AAPL")
+        assert "indicators" in detail

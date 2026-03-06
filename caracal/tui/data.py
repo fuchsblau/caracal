@@ -338,7 +338,7 @@ class DataService:
         """Return full detail for a single stock.
 
         Returns: {ticker, close, change_pct, signal, confidence,
-                  indicators, ohlcv}
+                  indicators, indicator_groups, vote_counts, ohlcv}
         """
         df = self._storage.get_ohlcv(ticker)
 
@@ -350,6 +350,8 @@ class DataService:
                 "signal": "N/A",
                 "confidence": 0.0,
                 "indicators": {},
+                "indicator_groups": [],
+                "vote_counts": None,
                 "ohlcv": [],
             }
 
@@ -364,9 +366,35 @@ class DataService:
                 )
 
         result = calculate_entry_signal(df)
+        indicators = result["indicators"]
 
-        # Last N days of OHLCV for the table
-        tail = df.tail(10)
+        # Build grouped indicators with interpretations
+        indicator_groups = []
+        for category in CATEGORY_ORDER:
+            keys = INDICATOR_CATEGORIES.get(category, [])
+            group_indicators = []
+            for key in keys:
+                value = indicators.get(key)
+                interpretation, detail = self._interpret_indicator(
+                    key, value, close=close, indicators=indicators
+                )
+                group_indicators.append({
+                    "name": INDICATOR_DISPLAY_NAMES.get(key, key),
+                    "key": key,
+                    "value": value,
+                    "interpretation": interpretation,
+                    "detail": detail,
+                })
+            indicator_groups.append({
+                "category": category,
+                "indicators": group_indicators,
+            })
+
+        # Vote counts
+        vote_counts = self._calculate_vote_counts(df)
+
+        # Last 5 days of OHLCV (US-077)
+        tail = df.tail(5)
         ohlcv_rows = []
         for _, row in tail.iterrows():
             ohlcv_rows.append({
@@ -388,7 +416,9 @@ class DataService:
             "change_pct": change_pct,
             "signal": result["signal"],
             "confidence": result["confidence"],
-            "indicators": result["indicators"],
+            "indicators": indicators,
+            "indicator_groups": indicator_groups,
+            "vote_counts": vote_counts,
             "ohlcv": ohlcv_rows,
         }
 

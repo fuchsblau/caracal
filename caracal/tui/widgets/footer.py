@@ -13,7 +13,7 @@ class CaracalFooter(Footer):
     last_updated: reactive[str] = reactive("—")
 
     def compose(self) -> ComposeResult:
-        yield Label("Updated —", id="update-timestamp")
+        yield Label(f"Updated {self.last_updated}", id="update-timestamp")
         yield from super().compose()
 
     def watch_last_updated(self, value: str) -> None:

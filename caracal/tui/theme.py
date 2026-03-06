@@ -1,6 +1,24 @@
 """TUI color constants and formatting for semantic styling."""
 
 from rich.text import Text
+from textual.theme import Theme
+
+# -- Caracal Dark theme (Textual Theme object) --------------------------------
+
+CARACAL_THEME = Theme(
+    name="caracal",
+    primary="#56b6c2",
+    secondary="#3d8b94",
+    accent="#c678dd",
+    foreground="#abb2bf",
+    background="#1e2127",
+    surface="#282c34",
+    panel="#2c313a",
+    warning="#e5c07b",
+    error="#e06c75",
+    success="#98c379",
+    dark=True,
+)
 
 # Semantic colors — shared across all screens
 COLOR_PRICE = "cyan"

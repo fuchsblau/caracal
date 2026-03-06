@@ -12,6 +12,7 @@ from caracal.tui.widgets.header import CaracalHeader
 
 from caracal.config import CaracalConfig
 from caracal.tui.data import DataService
+from caracal.tui.theme import CARACAL_THEME
 from caracal.tui.widgets.footer import CaracalFooter
 from caracal.tui.widgets.side_panel import SidePanel
 from caracal.tui.widgets.watchlist_panel import WatchlistPanel
@@ -69,6 +70,8 @@ class CaracalApp(App):
         yield CaracalFooter()
 
     async def on_mount(self) -> None:
+        self.register_theme(CARACAL_THEME)
+        self.theme = "caracal"
         self._watchlist_names = self.data_service.get_watchlist_names()
         await self._load_all_watchlists()
         # Start auto-refresh timer (30s)

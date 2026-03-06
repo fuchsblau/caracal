@@ -149,7 +149,7 @@ class DataService:
         import os
         from datetime import datetime
 
-        db_path = self.config.db_path
+        db_path = os.path.expanduser(self.config.db_path)
         if db_path == ":memory:" or not os.path.exists(db_path):
             return None
         mtime = os.path.getmtime(db_path)

@@ -181,6 +181,20 @@ class TestGetLastFetchTime:
         assert len(result) == 19
         storage.close()
 
+    def test_expands_tilde_in_db_path(self, tmp_path, monkeypatch):
+        """Tilde paths like ~/.caracal/caracal.db are expanded correctly."""
+        db_file = tmp_path / "test.db"
+        # Make ~ resolve to tmp_path parent so ~/test.db = db_file
+        monkeypatch.setenv("HOME", str(tmp_path))
+        config = CaracalConfig(db_path="~/test.db")
+        storage = DuckDBStorage(str(db_file))
+        ds = DataService(config, storage=storage)
+        storage.create_watchlist("tech")
+        result = ds.get_last_fetch_time()
+        assert result is not None
+        assert len(result) == 19
+        storage.close()
+
 
 class TestGetAppInfo:
     def test_returns_version_and_config(self, data_service):

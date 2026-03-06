@@ -65,8 +65,11 @@ skip_empty = true
 yahoo = ["yfinance>=0.2"]
 massive = ["massive>=0.1"]
 ibkr = ["ib_async>=2.0"]
+alphavantage = ["requests>=2.28"]
+eodhd = ["requests>=2.28"]
+finnhub = ["requests>=2.28"]
 tui = ["textual>=1.0"]
-all = ["caracal-trading[yahoo]", "caracal-trading[massive]", "caracal-trading[ibkr]", "caracal-trading[tui]"]
+all = ["caracal-trading[yahoo]", "caracal-trading[massive]", "caracal-trading[ibkr]", "caracal-trading[alphavantage]", "caracal-trading[eodhd]", "caracal-trading[finnhub]", "caracal-trading[tui]"]
 dev = [
     "caracal-trading[yahoo]",
     "caracal-trading[tui]",

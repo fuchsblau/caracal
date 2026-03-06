@@ -38,6 +38,13 @@ class WatchlistTable(Widget):
             super().__init__()
             self.ticker = ticker
 
+    class RowActivated(Message):
+        """Emitted when a row is selected via Enter."""
+
+        def __init__(self, ticker: str) -> None:
+            super().__init__()
+            self.ticker = ticker
+
     def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
         self._rows: list[dict] = []
@@ -181,3 +188,9 @@ class WatchlistTable(Widget):
         """Forward cursor moves as CursorChanged messages."""
         ticker = self._get_cursor_ticker()
         self.post_message(self.CursorChanged(ticker))
+
+    def on_data_table_row_selected(self, event) -> None:
+        """Forward Enter/row-select as RowActivated message."""
+        ticker = self._get_cursor_ticker()
+        if ticker:
+            self.post_message(self.RowActivated(ticker))

@@ -274,6 +274,15 @@ class CaracalApp(App):
     def on_watchlist_table_cursor_changed(self, event) -> None:
         self.focused_asset = event.ticker
 
+    def on_watchlist_table_row_activated(self, event) -> None:
+        """Handle Enter on a focused DataTable row."""
+        panel = self.query_one("#watchlist-panel", WatchlistPanel)
+        if panel.in_detail:
+            return
+        detail = self.data_service.get_stock_detail(event.ticker)
+        panel.show_detail(detail)
+        self.focused_asset = event.ticker
+
     # -- Info screen -----------------------------------------------------------
 
     def action_show_info(self) -> None:

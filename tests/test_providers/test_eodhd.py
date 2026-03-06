@@ -4,6 +4,7 @@ from datetime import date
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from caracal.providers.types import (
     ProviderError,
@@ -152,3 +153,64 @@ class TestEODHDProvider:
 
         provider = EODHDProvider(api_key="test_key")
         assert provider.validate_ticker("INVALID") is False
+
+    @patch("caracal.providers.eodhd.requests.get")
+    def test_fetch_ohlcv_http_error_raises_provider_error(self, mock_get):
+        from caracal.providers.eodhd import EODHDProvider
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "429 Client Error: Too Many Requests for url: "
+            "https://eodhd.com/api/eod/AAPL.US?api_token=SECRET_KEY"
+        )
+        mock_resp.status_code = 429
+        mock_get.return_value = mock_resp
+
+        provider = EODHDProvider(api_key="SECRET_KEY")
+        with pytest.raises(ProviderError, match="rate limit"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.eodhd.requests.get")
+    def test_fetch_ohlcv_timeout_raises_provider_error(self, mock_get):
+        from caracal.providers.eodhd import EODHDProvider
+
+        mock_get.side_effect = requests.exceptions.Timeout(
+            "Connection to eodhd.com timed out. "
+            "(connect timeout=30)"
+        )
+
+        provider = EODHDProvider(api_key="SECRET_KEY")
+        with pytest.raises(ProviderError, match="[Nn]etwork"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.eodhd.requests.get")
+    def test_fetch_ohlcv_connection_error_raises_provider_error(self, mock_get):
+        from caracal.providers.eodhd import EODHDProvider
+
+        mock_get.side_effect = requests.exceptions.ConnectionError(
+            "Failed to establish a new connection"
+        )
+
+        provider = EODHDProvider(api_key="SECRET_KEY")
+        with pytest.raises(ProviderError, match="[Nn]etwork"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.eodhd.requests.get")
+    def test_fetch_ohlcv_error_does_not_leak_url(self, mock_get):
+        from caracal.providers.eodhd import EODHDProvider
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "500 Server Error for url: "
+            "https://eodhd.com/api/eod/AAPL.US?api_token=SECRET_KEY"
+        )
+        mock_resp.status_code = 500
+        mock_get.return_value = mock_resp
+
+        provider = EODHDProvider(api_key="SECRET_KEY")
+        with pytest.raises(ProviderError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+        error_msg = str(exc_info.value)
+        assert "SECRET_KEY" not in error_msg
+        assert "eodhd.com" not in error_msg

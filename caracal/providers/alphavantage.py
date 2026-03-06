@@ -37,27 +37,56 @@ class AlphaVantageProvider:
             "apikey": self._api_key,
             "datatype": "csv",
         }
-        resp = requests.get(_API_BASE, params=params, timeout=30)
-        resp.raise_for_status()
+        try:
+            resp = requests.get(_API_BASE, params=params, timeout=30)
+            resp.raise_for_status()
+        except requests.exceptions.HTTPError:
+            code = getattr(resp, "status_code", None)
+            if code == 429:
+                raise ProviderError(
+                    "Alpha Vantage API rate limit exceeded"
+                ) from None
+            raise ProviderError(
+                f"Alpha Vantage API request failed (HTTP {code})"
+            ) from None
+        except (requests.exceptions.ConnectionError, requests.exceptions.Timeout):
+            raise ProviderError(
+                "Network error while connecting to Alpha Vantage"
+            ) from None
+        except requests.exceptions.RequestException:
+            raise ProviderError(
+                "Failed to connect to Alpha Vantage API"
+            ) from None
 
         text = resp.text.strip()
         if text.startswith("{"):
-            raise ProviderError(f"Alpha Vantage error: {text[:200]}")
+            raise ProviderError(
+                "Alpha Vantage API error (check API key and rate limits)"
+            )
 
         try:
             df = pd.read_csv(io.StringIO(resp.text))
         except pd.errors.ParserError:
-            raise ProviderError(f"Alpha Vantage error: {text[:200]}")
+            raise ProviderError(
+                "Failed to parse Alpha Vantage response"
+            ) from None
 
         if df.empty:
             raise TickerNotFoundError(ticker)
 
-        # Use adjusted close as the close price
-        df["close"] = df["adjusted_close"]
-        df = df.rename(columns={"timestamp": "date"})
-        df["date"] = pd.to_datetime(df["date"]).dt.date
-        mask = (df["date"] >= start_date) & (df["date"] <= end_date)
-        df = df.loc[mask, OHLCV_COLUMNS].sort_values("date").reset_index(drop=True)
+        try:
+            # Use adjusted close as the close price
+            df["close"] = df["adjusted_close"]
+            df = df.rename(columns={"timestamp": "date"})
+            df["date"] = pd.to_datetime(df["date"]).dt.date
+            mask = (df["date"] >= start_date) & (df["date"] <= end_date)
+            df = df.loc[mask, OHLCV_COLUMNS].sort_values("date").reset_index(
+                drop=True
+            )
+        except (KeyError, TypeError, ValueError) as exc:
+            raise ProviderError(
+                f"Unexpected response format from Alpha Vantage for {ticker}"
+            ) from exc
 
         if df.empty:
             raise TickerNotFoundError(ticker)

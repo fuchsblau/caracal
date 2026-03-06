@@ -4,6 +4,7 @@ from datetime import date
 from unittest.mock import MagicMock, patch
 
 import pytest
+import requests
 
 from caracal.providers.types import (
     ProviderError,
@@ -89,7 +90,7 @@ class TestAlphaVantageProvider:
         mock_get.return_value = mock_resp
 
         provider = AlphaVantageProvider(api_key="test_key")
-        with pytest.raises(ProviderError, match="Alpha Vantage error"):
+        with pytest.raises(ProviderError, match="Alpha Vantage API error"):
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
 
     @patch("caracal.providers.alphavantage.requests.get")
@@ -134,3 +135,64 @@ class TestAlphaVantageProvider:
 
         provider = AlphaVantageProvider(api_key="test_key")
         assert provider.validate_ticker("ZZZZZZZ") is False
+
+    @patch("caracal.providers.alphavantage.requests.get")
+    def test_fetch_ohlcv_http_error_raises_provider_error(self, mock_get):
+        from caracal.providers.alphavantage import AlphaVantageProvider
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "429 Client Error: Too Many Requests for url: "
+            "https://www.alphavantage.co/query?apikey=SECRET_KEY"
+        )
+        mock_resp.status_code = 429
+        mock_get.return_value = mock_resp
+
+        provider = AlphaVantageProvider(api_key="SECRET_KEY")
+        with pytest.raises(ProviderError, match="rate limit"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.alphavantage.requests.get")
+    def test_fetch_ohlcv_timeout_raises_provider_error(self, mock_get):
+        from caracal.providers.alphavantage import AlphaVantageProvider
+
+        mock_get.side_effect = requests.exceptions.Timeout(
+            "Connection to alphavantage.co timed out. "
+            "(connect timeout=30)"
+        )
+
+        provider = AlphaVantageProvider(api_key="SECRET_KEY")
+        with pytest.raises(ProviderError, match="[Nn]etwork"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.alphavantage.requests.get")
+    def test_fetch_ohlcv_connection_error_raises_provider_error(self, mock_get):
+        from caracal.providers.alphavantage import AlphaVantageProvider
+
+        mock_get.side_effect = requests.exceptions.ConnectionError(
+            "Failed to establish a new connection"
+        )
+
+        provider = AlphaVantageProvider(api_key="SECRET_KEY")
+        with pytest.raises(ProviderError, match="[Nn]etwork"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.alphavantage.requests.get")
+    def test_fetch_ohlcv_error_does_not_leak_url(self, mock_get):
+        from caracal.providers.alphavantage import AlphaVantageProvider
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "500 Server Error for url: "
+            "https://www.alphavantage.co/query?apikey=SECRET_KEY"
+        )
+        mock_resp.status_code = 500
+        mock_get.return_value = mock_resp
+
+        provider = AlphaVantageProvider(api_key="SECRET_KEY")
+        with pytest.raises(ProviderError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+        error_msg = str(exc_info.value)
+        assert "SECRET_KEY" not in error_msg
+        assert "alphavantage.co" not in error_msg

@@ -8,6 +8,7 @@ import requests
 from caracal.providers.types import (
     OHLCV_COLUMNS,
     ProviderError,
+    RateLimitError,
     TickerNotFoundError,
     sanitize_url,
 )
@@ -58,8 +59,10 @@ class EODHDProvider:
         except requests.exceptions.HTTPError:
             code = getattr(resp, "status_code", None)
             if code == 429:
-                raise ProviderError(
-                    "EODHD API rate limit exceeded"
+                retry_after = resp.headers.get("Retry-After")
+                raise RateLimitError(
+                    "EODHD",
+                    retry_after=int(retry_after) if retry_after else None,
                 ) from None
             raise ProviderError(
                 f"EODHD API request failed (HTTP {code})"
@@ -77,6 +80,20 @@ class EODHDProvider:
 
         if not data or isinstance(data, dict):
             raise TickerNotFoundError(ticker)
+
+        if not isinstance(data, list) or not isinstance(data[0], dict):
+            raise ProviderError(
+                f"Unexpected response format from EODHD for {ticker}: "
+                "expected list of objects"
+            )
+
+        _REQUIRED_KEYS = {"date", "open", "high", "low", "close", "adjusted_close", "volume"}
+        missing = _REQUIRED_KEYS - set(data[0].keys())
+        if missing:
+            raise ProviderError(
+                f"Unexpected response format from EODHD for {ticker}: "
+                f"missing keys {sorted(missing)}"
+            )
 
         try:
             df = pd.DataFrame(data)

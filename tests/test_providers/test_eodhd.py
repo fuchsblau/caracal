@@ -8,6 +8,7 @@ import requests
 
 from caracal.providers.types import (
     ProviderError,
+    RateLimitError,
     TickerNotFoundError,
     assert_ohlcv_schema,
 )
@@ -155,7 +156,7 @@ class TestEODHDProvider:
         assert provider.validate_ticker("INVALID") is False
 
     @patch("caracal.providers.eodhd.requests.get")
-    def test_fetch_ohlcv_http_error_raises_provider_error(self, mock_get):
+    def test_fetch_ohlcv_http_429_raises_rate_limit_error(self, mock_get):
         from caracal.providers.eodhd import EODHDProvider
 
         mock_resp = MagicMock()
@@ -164,10 +165,11 @@ class TestEODHDProvider:
             "https://eodhd.com/api/eod/AAPL.US?api_token=SECRET_KEY"
         )
         mock_resp.status_code = 429
+        mock_resp.headers = {}
         mock_get.return_value = mock_resp
 
         provider = EODHDProvider(api_key="SECRET_KEY")
-        with pytest.raises(ProviderError, match="rate limit"):
+        with pytest.raises(RateLimitError, match="EODHD"):
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
 
     @patch("caracal.providers.eodhd.requests.get")
@@ -214,3 +216,46 @@ class TestEODHDProvider:
         error_msg = str(exc_info.value)
         assert "SECRET_KEY" not in error_msg
         assert "eodhd.com" not in error_msg
+
+    @patch("caracal.providers.eodhd.requests.get")
+    def test_fetch_ohlcv_missing_keys_raises(self, mock_get):
+        from caracal.providers.eodhd import EODHDProvider
+
+        # Response list with missing 'adjusted_close' key
+        bad_data = [{"date": "2024-01-02", "open": 100, "high": 105, "low": 99}]
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = bad_data
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        provider = EODHDProvider(api_key="test_key")
+        with pytest.raises(ProviderError, match="missing keys"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.eodhd.requests.get")
+    def test_fetch_ohlcv_non_list_non_dict_raises(self, mock_get):
+        from caracal.providers.eodhd import EODHDProvider
+
+        # Response is a string instead of list of dicts
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = "unexpected string"
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        provider = EODHDProvider(api_key="test_key")
+        with pytest.raises((ProviderError, TickerNotFoundError)):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.eodhd.requests.get")
+    def test_fetch_ohlcv_list_of_non_dicts_raises(self, mock_get):
+        from caracal.providers.eodhd import EODHDProvider
+
+        # Response is a list but not of dicts
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = [1, 2, 3]
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        provider = EODHDProvider(api_key="test_key")
+        with pytest.raises(ProviderError, match="expected list of objects"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))

@@ -8,6 +8,7 @@ import requests
 
 from caracal.providers.types import (
     ProviderError,
+    RateLimitError,
     TickerNotFoundError,
     assert_ohlcv_schema,
 )
@@ -81,7 +82,7 @@ class TestAlphaVantageProvider:
             provider.fetch_ohlcv("INVALID", date(2024, 1, 1), date(2024, 1, 5))
 
     @patch("caracal.providers.alphavantage.requests.get")
-    def test_fetch_ohlcv_rate_limit_error(self, mock_get):
+    def test_fetch_ohlcv_rate_limit_json_response(self, mock_get):
         from caracal.providers.alphavantage import AlphaVantageProvider
 
         mock_resp = MagicMock()
@@ -90,7 +91,7 @@ class TestAlphaVantageProvider:
         mock_get.return_value = mock_resp
 
         provider = AlphaVantageProvider(api_key="test_key")
-        with pytest.raises(ProviderError, match="Alpha Vantage API error"):
+        with pytest.raises(RateLimitError, match="Alpha Vantage"):
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
 
     @patch("caracal.providers.alphavantage.requests.get")
@@ -137,7 +138,7 @@ class TestAlphaVantageProvider:
         assert provider.validate_ticker("ZZZZZZZ") is False
 
     @patch("caracal.providers.alphavantage.requests.get")
-    def test_fetch_ohlcv_http_error_raises_provider_error(self, mock_get):
+    def test_fetch_ohlcv_http_429_raises_rate_limit_error(self, mock_get):
         from caracal.providers.alphavantage import AlphaVantageProvider
 
         mock_resp = MagicMock()
@@ -146,11 +147,29 @@ class TestAlphaVantageProvider:
             "https://www.alphavantage.co/query?apikey=SECRET_KEY"
         )
         mock_resp.status_code = 429
+        mock_resp.headers = {}
         mock_get.return_value = mock_resp
 
         provider = AlphaVantageProvider(api_key="SECRET_KEY")
-        with pytest.raises(ProviderError, match="rate limit"):
+        with pytest.raises(RateLimitError, match="Alpha Vantage"):
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.alphavantage.requests.get")
+    def test_fetch_ohlcv_http_429_with_retry_after(self, mock_get):
+        from caracal.providers.alphavantage import AlphaVantageProvider
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "429 Client Error"
+        )
+        mock_resp.status_code = 429
+        mock_resp.headers = {"Retry-After": "30"}
+        mock_get.return_value = mock_resp
+
+        provider = AlphaVantageProvider(api_key="test_key")
+        with pytest.raises(RateLimitError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+        assert exc_info.value.retry_after == 30
 
     @patch("caracal.providers.alphavantage.requests.get")
     def test_fetch_ohlcv_timeout_raises_provider_error(self, mock_get):
@@ -225,3 +244,32 @@ class TestAlphaVantageProvider:
         provider = AlphaVantageProvider(api_key="test_key")
         with pytest.raises(ProviderError, match="validation failed"):
             provider.validate_ticker("AAPL")
+
+    @patch("caracal.providers.alphavantage.requests.get")
+    def test_fetch_ohlcv_missing_columns_raises(self, mock_get):
+        from caracal.providers.alphavantage import AlphaVantageProvider
+
+        # CSV with missing 'adjusted_close' column
+        bad_csv = "timestamp,open,high,low,close,volume\n2024-01-02,100,105,99,104,1000000\n"
+        mock_resp = MagicMock()
+        mock_resp.text = bad_csv
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        provider = AlphaVantageProvider(api_key="test_key")
+        with pytest.raises(ProviderError, match="missing columns"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.alphavantage.requests.get")
+    def test_fetch_ohlcv_completely_wrong_columns_raises(self, mock_get):
+        from caracal.providers.alphavantage import AlphaVantageProvider
+
+        bad_csv = "foo,bar,baz\n1,2,3\n"
+        mock_resp = MagicMock()
+        mock_resp.text = bad_csv
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        provider = AlphaVantageProvider(api_key="test_key")
+        with pytest.raises(ProviderError, match="missing columns"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))

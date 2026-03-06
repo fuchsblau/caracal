@@ -8,6 +8,7 @@ import requests
 from caracal.providers.types import (
     OHLCV_COLUMNS,
     ProviderError,
+    RateLimitError,
     TickerNotFoundError,
     sanitize_url,
 )
@@ -49,8 +50,10 @@ class FinnhubProvider:
         except requests.exceptions.HTTPError:
             code = getattr(resp, "status_code", None)
             if code == 429:
-                raise ProviderError(
-                    "Finnhub API rate limit exceeded"
+                retry_after = resp.headers.get("Retry-After")
+                raise RateLimitError(
+                    "Finnhub",
+                    retry_after=int(retry_after) if retry_after else None,
                 ) from None
             raise ProviderError(
                 f"Finnhub API request failed (HTTP {code})"
@@ -66,8 +69,22 @@ class FinnhubProvider:
 
         data = resp.json()
 
+        if not isinstance(data, dict):
+            raise ProviderError(
+                f"Unexpected response format from Finnhub for {ticker}: "
+                "expected JSON object"
+            )
+
         if data.get("s") != "ok":
             raise TickerNotFoundError(ticker)
+
+        _REQUIRED_KEYS = {"c", "h", "l", "o", "v", "t", "s"}
+        missing = _REQUIRED_KEYS - set(data.keys())
+        if missing:
+            raise ProviderError(
+                f"Unexpected response format from Finnhub for {ticker}: "
+                f"missing keys {sorted(missing)}"
+            )
 
         try:
             df = pd.DataFrame({

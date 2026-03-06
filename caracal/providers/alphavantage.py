@@ -9,6 +9,7 @@ import requests
 from caracal.providers.types import (
     OHLCV_COLUMNS,
     ProviderError,
+    RateLimitError,
     TickerNotFoundError,
     sanitize_url,
 )
@@ -48,8 +49,10 @@ class AlphaVantageProvider:
         except requests.exceptions.HTTPError:
             code = getattr(resp, "status_code", None)
             if code == 429:
-                raise ProviderError(
-                    "Alpha Vantage API rate limit exceeded"
+                retry_after = resp.headers.get("Retry-After")
+                raise RateLimitError(
+                    "Alpha Vantage",
+                    retry_after=int(retry_after) if retry_after else None,
                 ) from None
             raise ProviderError(
                 f"Alpha Vantage API request failed (HTTP {code})"
@@ -65,9 +68,7 @@ class AlphaVantageProvider:
 
         text = resp.text.strip()
         if text.startswith("{"):
-            raise ProviderError(
-                "Alpha Vantage API error (check API key and rate limits)"
-            )
+            raise RateLimitError("Alpha Vantage")
 
         try:
             df = pd.read_csv(io.StringIO(resp.text))
@@ -75,6 +76,17 @@ class AlphaVantageProvider:
             raise ProviderError(
                 "Failed to parse Alpha Vantage response"
             ) from None
+
+        _REQUIRED_COLUMNS = {
+            "timestamp", "open", "high", "low", "close",
+            "adjusted_close", "volume",
+        }
+        missing = _REQUIRED_COLUMNS - set(df.columns)
+        if missing:
+            raise ProviderError(
+                f"Unexpected response format from Alpha Vantage: "
+                f"missing columns {sorted(missing)}"
+            )
 
         if df.empty:
             raise TickerNotFoundError(ticker)

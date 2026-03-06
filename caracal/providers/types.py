@@ -36,6 +36,17 @@ class ProviderError(Exception):
     """Base exception for provider errors."""
 
 
+class RateLimitError(ProviderError):
+    """Raised when API rate limit is exceeded."""
+
+    def __init__(self, provider: str, retry_after: int | None = None) -> None:
+        self.retry_after = retry_after
+        msg = f"{provider} API rate limit exceeded"
+        if retry_after:
+            msg += f" (retry after {retry_after}s)"
+        super().__init__(msg)
+
+
 class TickerNotFoundError(ProviderError):
     """Raised when a ticker symbol is not found."""
 

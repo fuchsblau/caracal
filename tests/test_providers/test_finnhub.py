@@ -8,6 +8,7 @@ import requests
 
 from caracal.providers.types import (
     ProviderError,
+    RateLimitError,
     TickerNotFoundError,
     assert_ohlcv_schema,
 )
@@ -108,7 +109,7 @@ class TestFinnhubProvider:
         assert provider.validate_ticker("INVALID") is False
 
     @patch("caracal.providers.finnhub.requests.get")
-    def test_fetch_ohlcv_http_error_raises_provider_error(self, mock_get):
+    def test_fetch_ohlcv_http_429_raises_rate_limit_error(self, mock_get):
         from caracal.providers.finnhub import FinnhubProvider
 
         mock_resp = MagicMock()
@@ -117,11 +118,29 @@ class TestFinnhubProvider:
             "https://finnhub.io/api/v1/stock/candle?token=SECRET_KEY"
         )
         mock_resp.status_code = 429
+        mock_resp.headers = {}
         mock_get.return_value = mock_resp
 
         provider = FinnhubProvider(api_key="SECRET_KEY")
-        with pytest.raises(ProviderError, match="rate limit"):
+        with pytest.raises(RateLimitError, match="Finnhub"):
             provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.finnhub.requests.get")
+    def test_fetch_ohlcv_http_429_with_retry_after(self, mock_get):
+        from caracal.providers.finnhub import FinnhubProvider
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "429 Client Error"
+        )
+        mock_resp.status_code = 429
+        mock_resp.headers = {"Retry-After": "60"}
+        mock_get.return_value = mock_resp
+
+        provider = FinnhubProvider(api_key="test_key")
+        with pytest.raises(RateLimitError) as exc_info:
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+        assert exc_info.value.retry_after == 60
 
     @patch("caracal.providers.finnhub.requests.get")
     def test_fetch_ohlcv_timeout_raises_provider_error(self, mock_get):
@@ -167,3 +186,30 @@ class TestFinnhubProvider:
         error_msg = str(exc_info.value)
         assert "SECRET_KEY" not in error_msg
         assert "finnhub.io" not in error_msg
+
+    @patch("caracal.providers.finnhub.requests.get")
+    def test_fetch_ohlcv_non_dict_response_raises(self, mock_get):
+        from caracal.providers.finnhub import FinnhubProvider
+
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = [1, 2, 3]
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        provider = FinnhubProvider(api_key="test_key")
+        with pytest.raises(ProviderError, match="expected JSON object"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))
+
+    @patch("caracal.providers.finnhub.requests.get")
+    def test_fetch_ohlcv_missing_keys_raises(self, mock_get):
+        from caracal.providers.finnhub import FinnhubProvider
+
+        # Response has 's' == 'ok' but missing data keys
+        mock_resp = MagicMock()
+        mock_resp.json.return_value = {"s": "ok", "t": [1704153600]}
+        mock_resp.raise_for_status = MagicMock()
+        mock_get.return_value = mock_resp
+
+        provider = FinnhubProvider(api_key="test_key")
+        with pytest.raises(ProviderError, match="missing keys"):
+            provider.fetch_ohlcv("AAPL", date(2024, 1, 1), date(2024, 1, 5))

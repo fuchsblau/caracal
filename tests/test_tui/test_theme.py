@@ -62,6 +62,13 @@ def test_signal_colors_cover_all_signals():
     assert "hold" in SIGNAL_COLORS
 
 
+def test_signal_colors_semantic_mapping():
+    """US-060: BUY=green, SELL=red, HOLD=yellow."""
+    assert SIGNAL_COLORS["buy"] == COLOR_POSITIVE
+    assert SIGNAL_COLORS["sell"] == COLOR_NEGATIVE
+    assert SIGNAL_COLORS["hold"] == COLOR_NEUTRAL
+
+
 def test_color_constants_are_strings():
     assert isinstance(COLOR_PRICE, str)
     assert isinstance(COLOR_POSITIVE, str)
@@ -88,70 +95,205 @@ def test_indicator_styles_exist():
     assert "neutral" in INDICATOR_STYLES
 
 
-def test_format_rsi_overbought():
-    text = format_rsi(72.4)
-    assert "72" in str(text)
-    assert text.style is not None
+def _style_str(text):
+    """Return lowercased style string for assertion helpers."""
+    return str(text.style).lower()
 
 
-def test_format_rsi_oversold():
-    text = format_rsi(28.1)
-    assert "28" in str(text)
+# -- format_rsi ---------------------------------------------------------------
 
 
-def test_format_rsi_neutral():
-    text = format_rsi(50.3)
-    assert "50" in str(text)
+class TestFormatRSI:
+    """US-060: RSI formatted as 'value arrow' with semantic colors."""
+
+    def test_overbought_content(self):
+        text = format_rsi(72.4)
+        assert text.plain == "72 \u25b2"
+
+    def test_overbought_color(self):
+        text = format_rsi(72.4)
+        assert COLOR_OVERBOUGHT.lstrip("#") in _style_str(text)
+
+    def test_oversold_content(self):
+        text = format_rsi(28.1)
+        assert text.plain == "28 \u25bc"
+
+    def test_oversold_color(self):
+        text = format_rsi(28.1)
+        assert COLOR_OVERSOLD.lstrip("#") in _style_str(text)
+
+    def test_neutral_content(self):
+        text = format_rsi(50.3)
+        assert text.plain == "50 \u2014"
+
+    def test_neutral_color(self):
+        text = format_rsi(50.3)
+        assert COLOR_NEUTRAL.lstrip("#") in _style_str(text)
+
+    def test_none_returns_na(self):
+        text = format_rsi(None)
+        assert text.plain == "N/A"
+        assert "dim" in _style_str(text)
+
+    def test_boundary_above_70(self):
+        text = format_rsi(70.1)
+        assert "\u25b2" in text.plain
+
+    def test_boundary_at_70(self):
+        """RSI exactly 70 is not overbought (>70 threshold)."""
+        text = format_rsi(70.0)
+        assert "\u2014" in text.plain
+
+    def test_boundary_just_above_30(self):
+        """RSI 30.1 is neutral (not oversold)."""
+        text = format_rsi(30.1)
+        assert "\u2014" in text.plain
+
+    def test_boundary_at_30(self):
+        """RSI exactly 30 is not oversold (<30 threshold)."""
+        text = format_rsi(30.0)
+        assert "\u2014" in text.plain
+
+    def test_right_justified(self):
+        text = format_rsi(50.0)
+        assert text.justify == "right"
 
 
-def test_format_rsi_none():
-    text = format_rsi(None)
-    assert "N/A" in str(text)
+# -- format_macd --------------------------------------------------------------
 
 
-def test_format_macd_bull():
-    text = format_macd("bull")
-    assert "bull" in str(text)
+class TestFormatMACD:
+    """US-060: MACD formatted as 'symbol label' with bold colors."""
+
+    def test_bull_content(self):
+        text = format_macd("bull")
+        assert text.plain == "\u25b2 bull"
+
+    def test_bull_color_and_bold(self):
+        text = format_macd("bull")
+        style = _style_str(text)
+        assert COLOR_POSITIVE.lstrip("#") in style
+        assert "bold" in style
+
+    def test_bear_content(self):
+        text = format_macd("bear")
+        assert text.plain == "\u25bc bear"
+
+    def test_bear_color_and_bold(self):
+        text = format_macd("bear")
+        style = _style_str(text)
+        assert COLOR_NEGATIVE.lstrip("#") in style
+        assert "bold" in style
+
+    def test_none_returns_na(self):
+        text = format_macd(None)
+        assert text.plain == "N/A"
+        assert "dim" in _style_str(text)
+
+    def test_right_justified(self):
+        text = format_macd("bull")
+        assert text.justify == "right"
 
 
-def test_format_macd_bear():
-    text = format_macd("bear")
-    assert "bear" in str(text)
+# -- format_bb ----------------------------------------------------------------
 
 
-def test_format_macd_none():
-    text = format_macd(None)
-    assert "N/A" in str(text)
+class TestFormatBB:
+    """US-060: Bollinger Band position (OB/OS/OK) with symbols."""
+
+    def test_overbought_content(self):
+        text = format_bb("overbought")
+        assert text.plain == "\u25b2 OB"
+
+    def test_overbought_color(self):
+        text = format_bb("overbought")
+        assert COLOR_OVERBOUGHT.lstrip("#") in _style_str(text)
+
+    def test_oversold_content(self):
+        text = format_bb("oversold")
+        assert text.plain == "\u25bc OS"
+
+    def test_oversold_color(self):
+        text = format_bb("oversold")
+        assert COLOR_OVERSOLD.lstrip("#") in _style_str(text)
+
+    def test_neutral_content(self):
+        text = format_bb("neutral")
+        assert text.plain == "\u2014 OK"
+
+    def test_neutral_color(self):
+        text = format_bb("neutral")
+        assert COLOR_NEUTRAL.lstrip("#") in _style_str(text)
+
+    def test_none_returns_na(self):
+        text = format_bb(None)
+        assert text.plain == "N/A"
+        assert "dim" in _style_str(text)
+
+    def test_unknown_position_returns_na(self):
+        text = format_bb("unknown_value")
+        assert text.plain == "N/A"
+
+    def test_right_justified(self):
+        text = format_bb("neutral")
+        assert text.justify == "right"
 
 
-def test_format_bb_overbought():
-    text = format_bb("overbought")
-    assert "OB" in str(text)
+# -- format_confidence ---------------------------------------------------------
 
 
-def test_format_bb_oversold():
-    text = format_bb("oversold")
-    assert "OS" in str(text)
+class TestFormatConfidence:
+    """US-060: Confidence % with brightness gradient."""
 
+    def test_high_value_content(self):
+        text = format_confidence(0.85)
+        assert text.plain == "85%"
 
-def test_format_bb_neutral():
-    text = format_bb("neutral")
-    assert "OK" in str(text)
+    def test_high_value_bold_green(self):
+        text = format_confidence(0.85)
+        style = _style_str(text)
+        assert COLOR_POSITIVE.lstrip("#") in style
+        assert "bold" in style
 
+    def test_medium_value_content(self):
+        text = format_confidence(0.55)
+        assert text.plain == "55%"
 
-def test_format_confidence_high():
-    text = format_confidence(0.85)
-    assert "85" in str(text)
+    def test_medium_value_neutral_color(self):
+        text = format_confidence(0.55)
+        assert COLOR_NEUTRAL.lstrip("#") in _style_str(text)
 
+    def test_low_value_content(self):
+        text = format_confidence(0.15)
+        assert text.plain == "15%"
 
-def test_format_confidence_low():
-    text = format_confidence(0.15)
-    assert "15" in str(text)
+    def test_low_value_muted(self):
+        text = format_confidence(0.15)
+        assert "dim" in _style_str(text)
 
+    def test_none_returns_na(self):
+        text = format_confidence(None)
+        assert text.plain == "N/A"
+        assert "dim" in _style_str(text)
 
-def test_format_confidence_none():
-    text = format_confidence(None)
-    assert "N/A" in str(text)
+    def test_boundary_at_70(self):
+        """0.7 is high confidence."""
+        text = format_confidence(0.70)
+        assert "bold" in _style_str(text)
+
+    def test_boundary_at_40(self):
+        """0.4 is medium confidence."""
+        text = format_confidence(0.40)
+        assert COLOR_NEUTRAL.lstrip("#") in _style_str(text)
+
+    def test_boundary_below_40(self):
+        """0.39 is low confidence."""
+        text = format_confidence(0.39)
+        assert "dim" in _style_str(text)
+
+    def test_right_justified(self):
+        text = format_confidence(0.5)
+        assert text.justify == "right"
 
 
 class TestInterpretationColors:

@@ -62,7 +62,7 @@ class TestWatchlistTableFormatting:
             from textual.coordinate import Coordinate
             cell = dt.get_cell_at(Coordinate(0, 3))  # Change% column
             assert isinstance(cell, Text)
-            assert "#4caf50" in str(cell.style) or "4caf50" in str(cell.style).lower()
+            assert "#98c379" in str(cell.style) or "98c379" in str(cell.style).lower()
 
     @pytest.mark.asyncio
     async def test_negative_change_is_red(self):
@@ -74,7 +74,7 @@ class TestWatchlistTableFormatting:
             from textual.coordinate import Coordinate
             cell = dt.get_cell_at(Coordinate(0, 3))
             assert isinstance(cell, Text)
-            assert "#f44336" in str(cell.style) or "f44336" in str(cell.style).lower()
+            assert "#e06c75" in str(cell.style) or "e06c75" in str(cell.style).lower()
 
 
 class TestWatchlistTableNullHandling:

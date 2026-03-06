@@ -6,6 +6,7 @@ from textual.theme import Theme
 from caracal.tui.theme import (
     CARACAL_THEME,
     COLOR_NEGATIVE,
+    COLOR_NEUTRAL,
     COLOR_POSITIVE,
     COLOR_PRICE,
     COLOR_WARNING,
@@ -60,6 +61,16 @@ def test_color_constants_are_strings():
     assert isinstance(COLOR_PRICE, str)
     assert isinstance(COLOR_POSITIVE, str)
     assert isinstance(COLOR_NEGATIVE, str)
+
+
+def test_color_constants_match_palette():
+    assert COLOR_PRICE == "#56b6c2"
+    assert COLOR_POSITIVE == "#98c379"
+    assert COLOR_NEGATIVE == "#e06c75"
+    assert COLOR_WARNING == "#e5c07b"
+    assert COLOR_OVERBOUGHT == "#e06c75"
+    assert COLOR_OVERSOLD == "#98c379"
+    assert COLOR_NEUTRAL == "#e5c07b"
 
 
 def test_warning_color_exists():

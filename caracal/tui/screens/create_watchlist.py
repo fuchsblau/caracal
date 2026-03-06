@@ -30,13 +30,13 @@ class CreateWatchlistModal(ModalScreen[str | None]):
 
     #create-title {
         text-style: bold;
-        color: #00bcd4;
+        color: $primary;
         text-align: center;
         width: 100%;
     }
 
     #create-error {
-        color: #f44336;
+        color: $error;
         height: 1;
     }
     """

@@ -30,7 +30,7 @@ class RemoveTickerModal(ModalScreen[bool]):
 
     #remove-title {
         text-style: bold;
-        color: #f44336;
+        color: $error;
         text-align: center;
         width: 100%;
     }

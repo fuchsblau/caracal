@@ -7,21 +7,21 @@ Screen {
 Header, Header.-tall {
     dock: top;
     height: 1;
-    background: #00bcd4;
-    color: #0d2b33;
+    background: $primary;
+    color: $background;
 }
 
 HeaderTitle {
     content-align: left middle;
-    color: #0d2b33;
+    color: $background;
 }
 
 HeaderIcon {
-    color: #0d2b33;
+    color: $background;
 }
 
 HeaderClock {
-    color: #0d2b33;
+    color: $background;
 }
 
 Footer {
@@ -61,17 +61,17 @@ Tabs #tabs-list > Tab {
 
 Tabs #tabs-list > Tab.-active {
     text-style: bold;
-    color: #00bcd4;
+    color: $primary;
 }
 
 Tabs:focus #tabs-list > Tab.-active {
     text-style: bold;
-    color: #00bcd4;
-    background: #00bcd4 20%;
+    color: $primary;
+    background: $primary 20%;
 }
 
 Underline > .underline--bar {
-    color: #00bcd4;
+    color: $primary;
 }
 
 WatchlistTable {
@@ -83,13 +83,13 @@ WatchlistTable DataTable {
 }
 
 DataTable > .datatable--cursor {
-    background: #00bcd4 30%;
+    background: $primary 30%;
 }
 
 DataTable > .datatable--header {
-    background: #00bcd4 15%;
+    background: $primary 15%;
     text-style: bold;
-    color: #00bcd4;
+    color: $primary;
 }
 
 #empty-hint {
@@ -101,23 +101,23 @@ DataTable > .datatable--header {
 }
 
 .signal-buy {
-    color: #4caf50;
+    color: $success;
 }
 
 .signal-sell {
-    color: #f44336;
+    color: $error;
 }
 
 .signal-hold {
-    color: #ffc107;
+    color: $warning;
 }
 
 .change-positive {
-    color: #4caf50;
+    color: $success;
 }
 
 .change-negative {
-    color: #f44336;
+    color: $error;
 }
 
 /* Asset Detail View */
@@ -133,7 +133,7 @@ AssetDetailView #detail-header {
 
 AssetDetailView .section-title {
     padding: 1 2 0 2;
-    color: #00bcd4;
+    color: $primary;
 }
 
 AssetDetailView #indicators-table {

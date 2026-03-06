@@ -30,7 +30,7 @@ class DeleteWatchlistModal(ModalScreen[bool]):
 
     #delete-title {
         text-style: bold;
-        color: #f44336;
+        color: $error;
         text-align: center;
         width: 100%;
     }

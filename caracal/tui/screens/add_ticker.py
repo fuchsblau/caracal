@@ -33,13 +33,13 @@ class AddTickerModal(ModalScreen[list[str] | None]):
 
     #add-title {
         text-style: bold;
-        color: #00bcd4;
+        color: $primary;
         text-align: center;
         width: 100%;
     }
 
     #add-error {
-        color: #f44336;
+        color: $error;
         height: 1;
     }
 

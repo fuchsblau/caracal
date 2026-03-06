@@ -37,7 +37,7 @@ class InfoScreen(ModalScreen):
 
     #info-title {
         text-style: bold;
-        color: #00bcd4;
+        color: $primary;
         text-align: center;
         width: 100%;
     }

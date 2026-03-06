@@ -143,6 +143,29 @@ def load_config(path: Path | None = None) -> CaracalConfig:
         )
         sys.exit(1)
 
+    # Validate known constrained values before constructing config
+    if "default_period" in data and data["default_period"] not in VALID_PERIODS:
+        click.echo(
+            click.style(
+                f"Error: Invalid default_period '{data['default_period']}' "
+                f"in {config_path}. Must be one of: {', '.join(sorted(VALID_PERIODS))}",
+                fg="red",
+            ),
+            err=True,
+        )
+        sys.exit(1)
+
+    if "default_format" in data and data["default_format"] not in VALID_FORMATS:
+        click.echo(
+            click.style(
+                f"Error: Invalid default_format '{data['default_format']}' "
+                f"in {config_path}. Must be one of: {', '.join(sorted(VALID_FORMATS))}",
+                fg="red",
+            ),
+            err=True,
+        )
+        sys.exit(1)
+
     # Extract providers before filtering scalar fields
     providers = dict(data.pop("providers", {}))
     providers = _merge_env_vars(providers)

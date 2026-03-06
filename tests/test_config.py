@@ -65,6 +65,24 @@ class TestLoadConfig:
         with pytest.raises(SystemExit):
             load_config(config_file)
 
+    def test_load_config_warns_invalid_period(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('default_period = "invalid"\n')
+        with pytest.raises(SystemExit):
+            load_config(config_file)
+
+    def test_load_config_warns_invalid_format(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('default_format = "xml"\n')
+        with pytest.raises(SystemExit):
+            load_config(config_file)
+
+    def test_load_config_valid_period_accepted(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('default_period = "6mo"\n')
+        config = load_config(config_file)
+        assert config.default_period == "6mo"
+
 
 class TestConfigTemplate:
     def test_template_is_valid_toml(self):

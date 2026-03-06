@@ -2,6 +2,7 @@
 
 import pytest
 from textual.app import App, ComposeResult
+from textual.widgets import Static
 
 from caracal.tui.widgets.asset_detail_view import AssetDetailView
 
@@ -12,15 +13,44 @@ SAMPLE_DETAIL = {
     "signal": "buy",
     "confidence": 0.85,
     "indicators": {
-        "sma_20": 170.0,
-        "sma_50": 165.0,
-        "ema_12": 172.0,
-        "rsi_14": 65.2,
-        "macd": 3.5,
-        "macd_signal": 2.1,
-        "bollinger_upper": 180.0,
-        "bollinger_lower": 160.0,
+        "sma_20": 170.0, "sma_50": 165.0, "ema_12": 172.0,
+        "rsi_14": 65.2, "macd": 3.5, "macd_signal": 2.1,
+        "bollinger_upper": 180.0, "bollinger_lower": 160.0,
     },
+    "indicator_groups": [
+        {
+            "category": "Trend",
+            "indicators": [
+                {"name": "SMA 20", "key": "sma_20", "value": 170.0,
+                 "interpretation": "bullish", "detail": "Price > indicator"},
+                {"name": "SMA 50", "key": "sma_50", "value": 165.0,
+                 "interpretation": "bullish", "detail": "Price > indicator"},
+                {"name": "EMA 12", "key": "ema_12", "value": 172.0,
+                 "interpretation": "bullish", "detail": "Price > indicator"},
+            ],
+        },
+        {
+            "category": "Momentum",
+            "indicators": [
+                {"name": "RSI 14", "key": "rsi_14", "value": 65.2,
+                 "interpretation": "neutral", "detail": "65\u2014"},
+                {"name": "MACD", "key": "macd", "value": 3.5,
+                 "interpretation": "bullish", "detail": "BULL"},
+                {"name": "MACD Signal", "key": "macd_signal", "value": 2.1,
+                 "interpretation": None, "detail": None},
+            ],
+        },
+        {
+            "category": "Volatility",
+            "indicators": [
+                {"name": "BB Upper", "key": "bollinger_upper", "value": 180.0,
+                 "interpretation": "neutral", "detail": "\u2014OK"},
+                {"name": "BB Lower", "key": "bollinger_lower", "value": 160.0,
+                 "interpretation": "neutral", "detail": "\u2014OK"},
+            ],
+        },
+    ],
+    "vote_counts": {"buy": 4, "hold": 1, "sell": 0, "total": 5},
     "ohlcv": [
         {"date": "2026-03-04", "open": 174.0, "high": 176.0,
          "low": 173.0, "close": 175.5, "volume": 5000000},
@@ -46,33 +76,102 @@ class TestAssetDetailView:
     async def test_shows_ticker_in_header(self):
         app = DetailTestApp(SAMPLE_DETAIL)
         async with app.run_test():
-            view = app.query_one(AssetDetailView)
-            header_text = view.query_one("#detail-header").content
-            assert "AAPL" in header_text
+            header = app.query_one("#detail-header", Static)
+            assert "AAPL" in header.content
 
     @pytest.mark.asyncio
-    async def test_shows_all_indicators(self):
+    async def test_shows_signal_in_header(self):
         app = DetailTestApp(SAMPLE_DETAIL)
         async with app.run_test():
-            view = app.query_one(AssetDetailView)
-            ind_table = view.query_one("#indicators-table")
-            assert ind_table.row_count == 8
+            header = app.query_one("#detail-header", Static)
+            assert "BUY" in header.content
+
+    @pytest.mark.asyncio
+    async def test_shows_vote_counts_in_header(self):
+        app = DetailTestApp(SAMPLE_DETAIL)
+        async with app.run_test():
+            header = app.query_one("#detail-header", Static)
+            content = header.content
+            assert "4" in content
+            assert "\u25b2" in content
+
+    @pytest.mark.asyncio
+    async def test_shows_indicator_sections(self):
+        app = DetailTestApp(SAMPLE_DETAIL)
+        async with app.run_test():
+            sections = app.query_one("#indicator-sections", Static)
+            content = sections.content
+            assert "Trend" in content
+            assert "Momentum" in content
+            assert "Volatility" in content
+
+    @pytest.mark.asyncio
+    async def test_shows_indicator_values(self):
+        app = DetailTestApp(SAMPLE_DETAIL)
+        async with app.run_test():
+            sections = app.query_one("#indicator-sections", Static)
+            content = sections.content
+            assert "SMA 20" in content
+            assert "170.00" in content
+
+    @pytest.mark.asyncio
+    async def test_shows_interpretations(self):
+        app = DetailTestApp(SAMPLE_DETAIL)
+        async with app.run_test():
+            sections = app.query_one("#indicator-sections", Static)
+            content = sections.content
+            assert "Bullish" in content or "BULL" in content
 
     @pytest.mark.asyncio
     async def test_shows_ohlcv(self):
         app = DetailTestApp(SAMPLE_DETAIL)
         async with app.run_test():
-            view = app.query_one(AssetDetailView)
-            ohlcv_table = view.query_one("#ohlcv-table")
+            ohlcv_table = app.query_one("#ohlcv-table")
             assert ohlcv_table.row_count == 1
 
     @pytest.mark.asyncio
     async def test_handles_empty_data(self):
         empty = {
             "ticker": "NEW", "close": None, "change_pct": None,
-            "signal": "N/A", "confidence": 0.0, "indicators": {}, "ohlcv": [],
+            "signal": "N/A", "confidence": 0.0, "indicators": {},
+            "indicator_groups": [], "vote_counts": None, "ohlcv": [],
         }
         app = DetailTestApp(empty)
         async with app.run_test():
-            view = app.query_one(AssetDetailView)
-            assert view.query_one("#indicators-table").row_count == 0
+            assert app.query_one("#ohlcv-table").row_count == 0
+
+    @pytest.mark.asyncio
+    async def test_no_vote_counts_when_none(self):
+        detail = {**SAMPLE_DETAIL, "vote_counts": None}
+        app = DetailTestApp(detail)
+        async with app.run_test():
+            header = app.query_one("#detail-header", Static)
+            assert "AAPL" in header.content
+
+    @pytest.mark.asyncio
+    async def test_skips_empty_sections(self):
+        detail = {
+            **SAMPLE_DETAIL,
+            "indicator_groups": [
+                {
+                    "category": "Trend",
+                    "indicators": [
+                        {"name": "SMA 20", "key": "sma_20", "value": None,
+                         "interpretation": None, "detail": None},
+                    ],
+                },
+                {
+                    "category": "Momentum",
+                    "indicators": [
+                        {"name": "RSI 14", "key": "rsi_14", "value": 65.2,
+                         "interpretation": "neutral", "detail": "65\u2014"},
+                    ],
+                },
+            ],
+        }
+        app = DetailTestApp(detail)
+        async with app.run_test():
+            sections = app.query_one("#indicator-sections", Static)
+            content = sections.content
+            assert "Trend" not in content
+            assert "Momentum" in content

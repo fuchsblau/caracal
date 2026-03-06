@@ -84,6 +84,15 @@ class TestAppLayout:
             assert header.icon == "◉"
 
     @pytest.mark.asyncio
+    async def test_watchlist_panel_has_horizontal_padding(self):
+        app = _make_app_with_data()
+        async with app.run_test():
+            panel = app.query_one(WatchlistPanel)
+            padding = panel.styles.padding
+            assert padding.right == 1
+            assert padding.left == 1
+
+    @pytest.mark.asyncio
     async def test_manual_refresh(self):
         app = _make_app_with_data()
         async with app.run_test() as pilot:

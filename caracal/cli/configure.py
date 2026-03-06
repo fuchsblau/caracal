@@ -16,6 +16,9 @@ from caracal.output import human as human_out
 _PROVIDER_DISPLAY_NAMES = {
     "massive": "Massive",
     "ibkr": "IBKR",
+    "alphavantage": "Alpha Vantage",
+    "eodhd": "EODHD",
+    "finnhub": "Finnhub",
 }
 
 _PROVIDER_SETTINGS = {
@@ -25,10 +28,17 @@ _PROVIDER_SETTINGS = {
         ("port", "Port", False),
         ("client_id", "Client ID", False),
     ],
+    "alphavantage": [("api_key", "API key", True)],
+    "eodhd": [
+        ("api_key", "API key", True),
+        ("default_exchange", "Default exchange", False),
+    ],
+    "finnhub": [("api_key", "API key", True)],
 }
 
 _PROVIDER_DEFAULTS = {
     "ibkr": {"host": "127.0.0.1", "port": "7497", "client_id": "1"},
+    "eodhd": {"default_exchange": "US"},
 }
 
 

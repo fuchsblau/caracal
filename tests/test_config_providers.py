@@ -60,6 +60,43 @@ class TestProviderConfig:
             cfg = load_config(config_file)
         assert cfg.providers["massive"]["api_key"] == "pk_env"
 
+    def test_env_var_alphavantage(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('default_provider = "yahoo"\n')
+        with patch.dict(os.environ, {"CARACAL_ALPHAVANTAGE_API_KEY": "av_key"}):
+            cfg = load_config(config_file)
+        assert cfg.providers["alphavantage"]["api_key"] == "av_key"
+
+    def test_env_var_eodhd(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('default_provider = "yahoo"\n')
+        with patch.dict(os.environ, {"CARACAL_EODHD_API_KEY": "eod_key"}):
+            cfg = load_config(config_file)
+        assert cfg.providers["eodhd"]["api_key"] == "eod_key"
+
+    def test_env_var_finnhub(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('default_provider = "yahoo"\n')
+        with patch.dict(os.environ, {"CARACAL_FINNHUB_API_KEY": "fh_key"}):
+            cfg = load_config(config_file)
+        assert cfg.providers["finnhub"]["api_key"] == "fh_key"
+
+    def test_load_new_provider_sections(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text(
+            '[providers.alphavantage]\n'
+            'api_key = "av_test"\n\n'
+            '[providers.eodhd]\n'
+            'api_key = "eod_test"\n'
+            'default_exchange = "US"\n\n'
+            '[providers.finnhub]\n'
+            'api_key = "fh_test"\n'
+        )
+        cfg = load_config(config_file)
+        assert cfg.providers["alphavantage"]["api_key"] == "av_test"
+        assert cfg.providers["eodhd"]["default_exchange"] == "US"
+        assert cfg.providers["finnhub"]["api_key"] == "fh_test"
+
     def test_frozen_providers_dict(self):
         cfg = CaracalConfig(providers={"massive": {"api_key": "test"}})
         assert cfg.providers["massive"]["api_key"] == "test"

@@ -19,8 +19,8 @@ class TestConfigureCommand:
             patch("caracal.cli.configure.CONFIG_PATH", config_file),
         ):
             runner = CliRunner()
-            # 4 general prompts + decline both provider configs
-            result = runner.invoke(cli, ["configure"], input="\n\n\n\nn\nn\n")
+            # 4 general prompts + decline all 5 provider configs
+            result = runner.invoke(cli, ["configure"], input="\n\n\n\nn\nn\nn\nn\nn\n")
             assert result.exit_code == 0
             assert config_file.exists()
 
@@ -35,7 +35,7 @@ class TestConfigureCommand:
             patch("caracal.cli.configure.CONFIG_PATH", config_file),
         ):
             runner = CliRunner()
-            result = runner.invoke(cli, ["configure"], input="\n6mo\n\n\nn\nn\n")
+            result = runner.invoke(cli, ["configure"], input="\n6mo\n\n\nn\nn\nn\nn\nn\n")
             assert result.exit_code == 0
             parsed = tomllib.loads(config_file.read_text())
             assert parsed["default_period"] == "6mo"
@@ -52,7 +52,7 @@ class TestConfigureCommand:
             patch("caracal.cli.configure.CONFIG_PATH", config_file),
         ):
             runner = CliRunner()
-            result = runner.invoke(cli, ["configure"], input="\n\n\n\nn\nn\n")
+            result = runner.invoke(cli, ["configure"], input="\n\n\n\nn\nn\nn\nn\nn\n")
             assert result.exit_code == 0
             assert "3mo" in result.output
 
@@ -68,7 +68,7 @@ class TestConfigureCommand:
             patch("caracal.cli.configure.CONFIG_PATH", config_file),
         ):
             runner = CliRunner()
-            result = runner.invoke(cli, ["configure"], input="\n\n\n\nn\nn\n")
+            result = runner.invoke(cli, ["configure"], input="\n\n\n\nn\nn\nn\nn\nn\n")
             assert result.exit_code == 0
             parsed = tomllib.loads(config_file.read_text())
             assert parsed["default_period"] == "3mo"
@@ -85,9 +85,9 @@ class TestConfigureCommand:
             patch("caracal.cli.configure.CONFIG_PATH", config_file),
         ):
             runner = CliRunner()
-            # Accept defaults, then yes to massive, enter API key, no to ibkr
+            # Accept defaults, then yes to massive, enter API key, decline rest
             result = runner.invoke(
-                cli, ["configure"], input="\n\n\n\ny\npk_test123\nn\n"
+                cli, ["configure"], input="\n\n\n\ny\npk_test123\nn\nn\nn\nn\n"
             )
             assert result.exit_code == 0
             parsed = tomllib.loads(config_file.read_text())
@@ -104,9 +104,9 @@ class TestConfigureCommand:
             patch("caracal.cli.configure.CONFIG_PATH", config_file),
         ):
             runner = CliRunner()
-            # No to massive, yes to ibkr with custom port
+            # No to massive, yes to ibkr with custom port, decline rest
             result = runner.invoke(
-                cli, ["configure"], input="\n\n\n\nn\ny\n\n4001\n\n"
+                cli, ["configure"], input="\n\n\n\nn\ny\n\n4001\n\nn\nn\nn\n"
             )
             assert result.exit_code == 0
             parsed = tomllib.loads(config_file.read_text())
@@ -127,8 +127,8 @@ class TestConfigureCommand:
             patch("caracal.cli.configure.CONFIG_PATH", config_file),
         ):
             runner = CliRunner()
-            # Yes to massive (already configured), keep existing key, no to ibkr
-            result = runner.invoke(cli, ["configure"], input="\n\n\n\ny\n\nn\n")
+            # Yes to massive (already configured), keep existing key, decline rest
+            result = runner.invoke(cli, ["configure"], input="\n\n\n\ny\n\nn\nn\nn\nn\n")
             assert result.exit_code == 0
             assert "pk_s...***" in result.output
             # Key should be preserved

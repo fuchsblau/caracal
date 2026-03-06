@@ -10,7 +10,7 @@ from pathlib import Path
 
 import click
 
-_KNOWN_PROVIDERS = {"yahoo", "massive", "ibkr"}
+_KNOWN_PROVIDERS = {"yahoo", "massive", "ibkr", "alphavantage", "eodhd", "finnhub"}
 
 CONFIG_DIR = Path.home() / ".caracal"
 CONFIG_PATH = CONFIG_DIR / "config.toml"
@@ -56,6 +56,16 @@ default_format = "{default_format}"
 # host = "127.0.0.1"
 # port = "7497"
 # client_id = "1"
+#
+# [providers.alphavantage]
+# api_key = "your-api-key"
+#
+# [providers.eodhd]
+# api_key = "your-api-key"
+# default_exchange = "US"
+#
+# [providers.finnhub]
+# api_key = "your-api-key"
 """
 
 

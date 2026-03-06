@@ -6,7 +6,12 @@ from datetime import date
 import pandas as pd
 import requests
 
-from caracal.providers.types import OHLCV_COLUMNS, ProviderError, TickerNotFoundError
+from caracal.providers.types import (
+    OHLCV_COLUMNS,
+    ProviderError,
+    TickerNotFoundError,
+    sanitize_url,
+)
 
 _API_BASE = "https://www.alphavantage.co/query"
 
@@ -99,6 +104,12 @@ class AlphaVantageProvider:
             "keywords": ticker,
             "apikey": self._api_key,
         }
-        resp = requests.get(_API_BASE, params=params, timeout=10)
+        try:
+            resp = requests.get(_API_BASE, params=params, timeout=10)
+            resp.raise_for_status()
+        except requests.exceptions.RequestException as exc:
+            raise ProviderError(
+                f"Alpha Vantage ticker validation failed: {sanitize_url(str(exc))}"
+            ) from None
         matches = resp.json().get("bestMatches", [])
         return any(m.get("1. symbol") == ticker for m in matches)

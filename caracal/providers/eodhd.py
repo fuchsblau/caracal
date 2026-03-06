@@ -5,7 +5,12 @@ from datetime import date
 import pandas as pd
 import requests
 
-from caracal.providers.types import OHLCV_COLUMNS, ProviderError, TickerNotFoundError
+from caracal.providers.types import (
+    OHLCV_COLUMNS,
+    ProviderError,
+    TickerNotFoundError,
+    sanitize_url,
+)
 
 _API_BASE = "https://eodhd.com/api"
 

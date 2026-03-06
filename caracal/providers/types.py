@@ -1,6 +1,22 @@
 """Market data types and exceptions."""
 
+import re
+
 import pandas as pd
+
+_SECRET_PARAMS = re.compile(
+    r"((?:api_?key|token|api_?token|secret)=)[^&]*", re.IGNORECASE
+)
+
+
+def sanitize_url(url: str) -> str:
+    """Mask secret query parameters in a URL.
+
+    Replaces the values of known secret parameters (apikey, api_key, token,
+    api_token, secret) with '***' to prevent API key leakage in logs and
+    error messages.
+    """
+    return _SECRET_PARAMS.sub(r"\1***", url)
 
 
 class ProviderError(Exception):

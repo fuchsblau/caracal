@@ -196,3 +196,32 @@ class TestAlphaVantageProvider:
         error_msg = str(exc_info.value)
         assert "SECRET_KEY" not in error_msg
         assert "alphavantage.co" not in error_msg
+
+    @patch("caracal.providers.alphavantage.requests.get")
+    def test_validate_ticker_error_does_not_leak_api_key(self, mock_get):
+        from caracal.providers.alphavantage import AlphaVantageProvider
+
+        mock_get.side_effect = requests.exceptions.ConnectionError(
+            "Failed to connect to https://www.alphavantage.co/query?apikey=SECRET_KEY"
+        )
+
+        provider = AlphaVantageProvider(api_key="SECRET_KEY")
+        with pytest.raises(ProviderError) as exc_info:
+            provider.validate_ticker("AAPL")
+
+        error_msg = str(exc_info.value)
+        assert "SECRET_KEY" not in error_msg
+
+    @patch("caracal.providers.alphavantage.requests.get")
+    def test_validate_ticker_http_error_raises_provider_error(self, mock_get):
+        from caracal.providers.alphavantage import AlphaVantageProvider
+
+        mock_resp = MagicMock()
+        mock_resp.raise_for_status.side_effect = requests.exceptions.HTTPError(
+            "500 Server Error"
+        )
+        mock_get.return_value = mock_resp
+
+        provider = AlphaVantageProvider(api_key="test_key")
+        with pytest.raises(ProviderError, match="validation failed"):
+            provider.validate_ticker("AAPL")

@@ -8,16 +8,20 @@ Header, Header.-tall {
     dock: top;
     height: 1;
     background: #00bcd4;
-    color: #ffffff;
+    color: #0d2b33;
 }
 
 HeaderTitle {
     content-align: left middle;
-    color: #ffffff;
+    color: #0d2b33;
 }
 
 HeaderIcon {
-    color: #ffffff;
+    color: #0d2b33;
+}
+
+HeaderClock {
+    color: #0d2b33;
 }
 
 Footer {

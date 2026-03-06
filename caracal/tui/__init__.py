@@ -8,7 +8,7 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.reactive import reactive
-from textual.widgets import Header
+from caracal.tui.widgets.header import CaracalHeader
 
 from caracal.config import CaracalConfig
 from caracal.tui.data import DataService
@@ -62,7 +62,7 @@ class CaracalApp(App):
         self._watchlist_names: list[str] = []
 
     def compose(self) -> ComposeResult:
-        yield Header(show_clock=True, icon="◉")
+        yield CaracalHeader(show_clock=True, icon="◉")
         with Horizontal(id="main-layout"):
             yield WatchlistPanel(id="watchlist-panel")
             yield SidePanel(id="side-panel")

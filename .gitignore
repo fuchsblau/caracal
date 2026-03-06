@@ -31,3 +31,8 @@ coverage.xml
 
 # Claude Code
 .claude/settings.local.json
+
+# Credentials (safety net)
+.env
+.env.*
+config.toml

@@ -5,6 +5,7 @@ from textual.theme import Theme
 
 from caracal.tui.theme import (
     CARACAL_THEME,
+    COLOR_MUTED,
     COLOR_NEGATIVE,
     COLOR_NEUTRAL,
     COLOR_POSITIVE,
@@ -13,11 +14,14 @@ from caracal.tui.theme import (
     COLOR_OVERBOUGHT,
     COLOR_OVERSOLD,
     INDICATOR_STYLES,
+    INTERPRETATION_COLORS,
     SIGNAL_COLORS,
     format_bb,
     format_confidence,
+    format_interpretation,
     format_macd,
     format_rsi,
+    format_trend,
 )
 
 
@@ -147,3 +151,63 @@ def test_format_confidence_low():
 def test_format_confidence_none():
     text = format_confidence(None)
     assert "N/A" in str(text)
+
+
+class TestInterpretationColors:
+    def test_covers_all_interpretations(self):
+        expected = {"bullish", "bearish", "neutral", "overbought", "oversold"}
+        assert set(INTERPRETATION_COLORS.keys()) == expected
+
+    def test_bullish_is_positive(self):
+        assert INTERPRETATION_COLORS["bullish"] == COLOR_POSITIVE
+
+    def test_bearish_is_negative(self):
+        assert INTERPRETATION_COLORS["bearish"] == COLOR_NEGATIVE
+
+    def test_overbought_matches(self):
+        assert INTERPRETATION_COLORS["overbought"] == COLOR_OVERBOUGHT
+
+    def test_oversold_matches(self):
+        assert INTERPRETATION_COLORS["oversold"] == COLOR_OVERSOLD
+
+
+class TestFormatInterpretation:
+    def test_bullish(self):
+        color, label = format_interpretation("bullish")
+        assert color == COLOR_POSITIVE
+        assert label == "Bullish"
+
+    def test_bearish(self):
+        color, label = format_interpretation("bearish")
+        assert color == COLOR_NEGATIVE
+        assert label == "Bearish"
+
+    def test_none_returns_muted(self):
+        color, label = format_interpretation(None)
+        assert color == COLOR_MUTED
+        assert label == ""
+
+    def test_unknown_returns_muted(self):
+        color, label = format_interpretation("unknown")
+        assert color == COLOR_MUTED
+        assert label == "Unknown"
+
+
+class TestFormatTrend:
+    def test_price_above_indicator(self):
+        text = format_trend(170.0, 175.0)
+        assert "170.00" in str(text)
+        assert "\u25b2" in str(text)
+
+    def test_price_below_indicator(self):
+        text = format_trend(180.0, 175.0)
+        assert "180.00" in str(text)
+        assert "\u25bc" in str(text)
+
+    def test_none_value(self):
+        text = format_trend(None, 175.0)
+        assert "N/A" in str(text)
+
+    def test_none_close(self):
+        text = format_trend(170.0, None)
+        assert "N/A" in str(text)

@@ -42,6 +42,35 @@ INDICATOR_STYLES = {
     "neutral": COLOR_NEUTRAL,
 }
 
+INTERPRETATION_COLORS: dict[str, str] = {
+    "bullish": COLOR_POSITIVE,
+    "bearish": COLOR_NEGATIVE,
+    "neutral": COLOR_NEUTRAL,
+    "overbought": COLOR_OVERBOUGHT,
+    "oversold": COLOR_OVERSOLD,
+}
+
+
+def format_interpretation(interpretation: str | None) -> tuple[str, str]:
+    """Return (color, label) for an interpretation.
+
+    Used by AssetDetailView for inline interpretation rendering.
+    """
+    if interpretation is None:
+        return COLOR_MUTED, ""
+    color = INTERPRETATION_COLORS.get(interpretation, COLOR_MUTED)
+    label = interpretation.capitalize()
+    return color, label
+
+
+def format_trend(value: float | None, close: float | None) -> Text:
+    """Format trend indicator (SMA/EMA) with price comparison."""
+    if value is None or close is None:
+        return Text("N/A", style=COLOR_MUTED, justify="right")
+    color = COLOR_POSITIVE if close > value else COLOR_NEGATIVE
+    symbol = "\u25b2" if close > value else "\u25bc"
+    return Text(f"{value:.2f} {symbol}", style=color, justify="right")
+
 
 def format_rsi(value: float | None) -> Text:
     """Format RSI as interpreted signal: 72▲ / 28▼ / 50—."""

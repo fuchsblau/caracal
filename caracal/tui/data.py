@@ -181,11 +181,11 @@ class DataService:
                         self._storage.store_ohlcv(ticker, df)
                 except Exception:
                     pass  # Keep cached data on provider failure
-
-            # Cache company names (best-effort)
-            self._fetch_ticker_names(tickers)
         except Exception:
             pass  # Fall back to cached data if provider unavailable
+
+        # Cache company names independently of provider fetch
+        self._fetch_ticker_names(tickers)
 
         return self.get_watchlist_overview(name)
 

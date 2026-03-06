@@ -45,50 +45,11 @@ class DuckDBStorage:
     # -- schema -----------------------------------------------------------
 
     def _init_schema(self) -> None:
-        """Create tables if they do not exist."""
+        """Run schema migrations."""
+        from caracal.storage.migrations import run_migrations
+
         try:
-            self._conn.execute("""
-                CREATE TABLE IF NOT EXISTS ohlcv (
-                    ticker VARCHAR NOT NULL,
-                    date DATE NOT NULL,
-                    open DOUBLE,
-                    high DOUBLE,
-                    low DOUBLE,
-                    close DOUBLE,
-                    volume BIGINT,
-                    PRIMARY KEY (ticker, date)
-                )
-            """)
-            self._conn.execute("""
-                CREATE TABLE IF NOT EXISTS indicators (
-                    ticker VARCHAR NOT NULL,
-                    date DATE NOT NULL,
-                    name VARCHAR NOT NULL,
-                    value DOUBLE,
-                    PRIMARY KEY (ticker, date, name)
-                )
-            """)
-            self._conn.execute("""
-                CREATE TABLE IF NOT EXISTS watchlists (
-                    name VARCHAR NOT NULL PRIMARY KEY,
-                    created_at TIMESTAMP DEFAULT current_timestamp
-                )
-            """)
-            self._conn.execute("""
-                CREATE TABLE IF NOT EXISTS watchlist_items (
-                    watchlist_name VARCHAR NOT NULL,
-                    ticker VARCHAR NOT NULL,
-                    added_at TIMESTAMP DEFAULT current_timestamp,
-                    PRIMARY KEY (watchlist_name, ticker),
-                    FOREIGN KEY (watchlist_name) REFERENCES watchlists(name)
-                )
-            """)
-            self._conn.execute("""
-                CREATE TABLE IF NOT EXISTS ticker_metadata (
-                    ticker VARCHAR NOT NULL PRIMARY KEY,
-                    name VARCHAR
-                )
-            """)
+            run_migrations(self._conn)
         except duckdb.Error as e:
             raise StorageError(f"Failed to initialise schema: {e}") from e
 

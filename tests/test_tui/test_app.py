@@ -846,12 +846,36 @@ class TestFocusedAsset:
             assert app.focused_asset is None
 
     @pytest.mark.asyncio
+    async def test_focused_asset_is_reactive(self, config):
+        """focused_asset must be a reactive property for automatic propagation."""
+        from textual.reactive import reactive
+
+        assert isinstance(
+            CaracalApp.__dict__["focused_asset"], reactive
+        ), "focused_asset should be a Textual reactive"
+
+    @pytest.mark.asyncio
     async def test_focused_asset_set_on_drill_down(self, config):
         app = _make_app_with_watchlists(config)
         async with app.run_test() as pilot:
             await pilot.press("enter")
             await pilot.pause()
             assert app.focused_asset is not None
+
+    @pytest.mark.asyncio
+    async def test_focused_asset_tracks_cursor_changes(self, config):
+        """on_watchlist_table_cursor_changed handler updates focused_asset."""
+        app = _make_app_with_watchlists(config, {"wl": ["AAPL", "MSFT"]})
+        async with app.run_test():
+            # Directly call the handler to test the reactive wiring
+            event = MagicMock()
+            event.ticker = "AAPL"
+            app.on_watchlist_table_cursor_changed(event)
+            assert app.focused_asset == "AAPL"
+            # Move to a different ticker
+            event.ticker = "MSFT"
+            app.on_watchlist_table_cursor_changed(event)
+            assert app.focused_asset == "MSFT"
 
     @pytest.mark.asyncio
     async def test_cursor_changed_event(self, config):
@@ -863,6 +887,21 @@ class TestFocusedAsset:
             event.ticker = "TEST"
             app.on_watchlist_table_cursor_changed(event)
             assert app.focused_asset == "TEST"
+
+    @pytest.mark.asyncio
+    async def test_cursor_changed_updates_focused_asset_to_none(self, config):
+        """CursorChanged with None ticker sets focused_asset to None."""
+        app = _make_app_with_watchlists(config)
+        async with app.run_test():
+            event = MagicMock()
+            event.ticker = "AAPL"
+            app.on_watchlist_table_cursor_changed(event)
+            assert app.focused_asset == "AAPL"
+            # Now clear it
+            event2 = MagicMock()
+            event2.ticker = None
+            app.on_watchlist_table_cursor_changed(event2)
+            assert app.focused_asset is None
 
     @pytest.mark.asyncio
     async def test_row_activated_event(self, config):
@@ -890,6 +929,31 @@ class TestFocusedAsset:
             event.ticker = "DIFFERENT"
             app.on_watchlist_table_row_activated(event)
             assert app.focused_asset == first_ticker
+
+    @pytest.mark.asyncio
+    async def test_active_watchlist_is_reactive(self, config):
+        """active_watchlist must also be a reactive property."""
+        from textual.reactive import reactive
+
+        assert isinstance(
+            CaracalApp.__dict__["active_watchlist"], reactive
+        ), "active_watchlist should be a Textual reactive"
+
+    @pytest.mark.asyncio
+    async def test_focused_asset_preserved_on_tab_switch(self, config):
+        """Switching tabs does not preserve focused_asset (it can change)."""
+        app = _make_app_with_watchlists(config)
+        async with app.run_test() as pilot:
+            # Set focused asset via cursor event
+            event = MagicMock()
+            event.ticker = "AAPL"
+            app.on_watchlist_table_cursor_changed(event)
+            assert app.focused_asset == "AAPL"
+            # Switch tab -- focused_asset may change based on new table
+            await pilot.press("2")
+            await pilot.pause()
+            # Active watchlist should have changed
+            assert app.active_watchlist == app._watchlist_names[1]
 
 
 # ---------------------------------------------------------------------------

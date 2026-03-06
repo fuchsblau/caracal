@@ -494,6 +494,50 @@ class TestWatchlistTableEmptyHint:
             assert dt.display is True
 
 
+class TestWatchlistTableCursorMessages:
+    """US-064: WatchlistTable emits CursorChanged and RowActivated messages."""
+
+    @pytest.mark.asyncio
+    async def test_cursor_changed_message_has_ticker(self):
+        """CursorChanged message carries the ticker string."""
+        msg = WatchlistTable.CursorChanged("AAPL")
+        assert msg.ticker == "AAPL"
+
+    @pytest.mark.asyncio
+    async def test_cursor_changed_message_accepts_none(self):
+        """CursorChanged accepts None for empty tables."""
+        msg = WatchlistTable.CursorChanged(None)
+        assert msg.ticker is None
+
+    @pytest.mark.asyncio
+    async def test_row_activated_message_has_ticker(self):
+        """RowActivated message carries the ticker string."""
+        msg = WatchlistTable.RowActivated("MSFT")
+        assert msg.ticker == "MSFT"
+
+    @pytest.mark.asyncio
+    async def test_get_selected_ticker_returns_current_cursor(self):
+        """get_selected_ticker returns the ticker at the cursor position."""
+        rows = [
+            {**SAMPLE_ROW, "ticker": "AAPL"},
+            {**SAMPLE_ROW, "ticker": "MSFT"},
+        ]
+        app = WatchlistTableApp(rows)
+        async with app.run_test():
+            table = app.query_one(WatchlistTable)
+            # Cursor at row 0
+            ticker = table.get_selected_ticker()
+            assert ticker == "AAPL"
+
+    @pytest.mark.asyncio
+    async def test_get_selected_ticker_none_on_empty_table(self):
+        """get_selected_ticker returns None when table is empty."""
+        app = WatchlistTableApp([])
+        async with app.run_test():
+            table = app.query_one(WatchlistTable)
+            assert table.get_selected_ticker() is None
+
+
 class TestWatchlistTableSorting:
     @pytest.mark.asyncio
     async def test_cycle_sort_changes_order(self):

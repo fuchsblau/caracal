@@ -1,3 +1,5 @@
+import os
+import stat
 from datetime import date
 
 import pandas as pd
@@ -218,3 +220,12 @@ class TestFilePermissions:
 
         mode = db_dir.stat().st_mode & 0o777
         assert mode == 0o700, f"Expected 0o700, got {oct(mode)}"
+
+    def test_db_file_not_world_readable(self, tmp_path):
+        """DB file should not be world-readable or world-writable."""
+        db_path = str(tmp_path / "test.db")
+        storage = DuckDBStorage(db_path)
+        mode = os.stat(db_path).st_mode
+        assert not (mode & stat.S_IROTH), "DB file should not be world-readable"
+        assert not (mode & stat.S_IWOTH), "DB file should not be world-writable"
+        storage.close()

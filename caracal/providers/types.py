@@ -8,6 +8,8 @@ _SECRET_PARAMS = re.compile(
     r"((?:api_?key|token|api_?token|secret)=)[^&]*", re.IGNORECASE
 )
 
+_TICKER_PATTERN = re.compile(r"^[A-Z0-9.]{1,12}$")
+
 
 def sanitize_url(url: str) -> str:
     """Mask secret query parameters in a URL.
@@ -17,6 +19,17 @@ def sanitize_url(url: str) -> str:
     error messages.
     """
     return _SECRET_PARAMS.sub(r"\1***", url)
+
+
+def validate_ticker_format(ticker: str) -> bool:
+    """Validate ticker symbol format.
+
+    Returns True if the ticker matches the expected format: 1-12 uppercase
+    alphanumeric characters or dots (e.g. 'AAPL', 'BRK.B', 'SAP.DE').
+    Returns False for empty strings, overly long inputs, or strings
+    containing unexpected characters.
+    """
+    return bool(_TICKER_PATTERN.match(ticker))
 
 
 class ProviderError(Exception):

@@ -6,10 +6,11 @@ from textual.app import App, ComposeResult
 from textual.binding import Binding
 from textual.containers import Horizontal
 from textual.reactive import reactive
-from textual.widgets import Footer, Header
+from textual.widgets import Header
 
 from caracal.config import CaracalConfig
 from caracal.tui.data import DataService
+from caracal.tui.widgets.footer import CaracalFooter
 from caracal.tui.widgets.side_panel import SidePanel
 from caracal.tui.widgets.watchlist_panel import WatchlistPanel
 
@@ -63,7 +64,7 @@ class CaracalApp(App):
         with Horizontal(id="main-layout"):
             yield WatchlistPanel(id="watchlist-panel")
             yield SidePanel(id="side-panel")
-        yield Footer()
+        yield CaracalFooter()
 
     async def on_mount(self) -> None:
         self._watchlist_names = self.data_service.get_watchlist_names()

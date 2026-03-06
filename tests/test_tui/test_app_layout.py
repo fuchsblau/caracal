@@ -8,6 +8,7 @@ from caracal.tui.data import DataService
 from caracal.tui.widgets.watchlist_panel import WatchlistPanel
 from caracal.tui.widgets.side_panel import SidePanel
 from textual.widgets import Header
+from caracal.tui.widgets.footer import CaracalFooter
 
 
 def _make_app_with_data():
@@ -91,6 +92,13 @@ class TestAppLayout:
             padding = panel.styles.padding
             assert padding.right == 1
             assert padding.left == 1
+
+    @pytest.mark.asyncio
+    async def test_app_uses_caracal_footer(self):
+        app = _make_app_with_data()
+        async with app.run_test():
+            footer = app.query_one(CaracalFooter)
+            assert footer is not None
 
     @pytest.mark.asyncio
     async def test_manual_refresh(self):

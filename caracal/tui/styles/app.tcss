@@ -16,6 +16,13 @@ Footer {
     align-horizontal: right;
 }
 
+#update-timestamp {
+    dock: left;
+    width: auto;
+    color: $text-muted;
+    padding: 0 1;
+}
+
 /* Main layout */
 #main-layout {
     height: 1fr;

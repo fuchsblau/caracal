@@ -13,14 +13,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
       - run: uv tool run bandit -r caracal/ -ll
 
   dependency-audit:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
       - run: uv sync
       - run: uv run pip-audit
 
@@ -28,6 +28,6 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
-      - uses: astral-sh/setup-uv@v5
+      - uses: astral-sh/setup-uv@v7
       - run: uv tool run detect-secrets scan --all-files --exclude-files '\.git/.*' | python -c "import sys,json; r=json.load(sys.stdin); results=r.get('results',{}); print(f'Found {sum(len(v) for v in results.values())} potential secrets in {len(results)} files') if results else print('No secrets detected'); sys.exit(1 if results else 0)"
     continue-on-error: true

@@ -3,9 +3,16 @@ name: Release
 on:
   push:
     tags: ["v*.*.*"]
+  workflow_dispatch:
+    inputs:
+      next_version:
+        description: 'Override next dev version (e.g. 2.0.0). Default: MINOR+1'
+        required: false
+        type: string
 
 jobs:
   test:
+    if: github.event_name == 'push'
     runs-on: ubuntu-latest
     strategy:
       matrix:
@@ -19,6 +26,7 @@ jobs:
       - run: uv run pytest
 
   build:
+    if: github.event_name == 'push'
     needs: test
     runs-on: ubuntu-latest
     steps:
@@ -31,6 +39,7 @@ jobs:
           path: dist/
 
   publish:
+    if: github.event_name == 'push'
     needs: [test, build]
     runs-on: ubuntu-latest
     environment: pypi
@@ -44,6 +53,7 @@ jobs:
       - uses: pypa/gh-action-pypi-publish@release/v1
 
   github-release:
+    if: github.event_name == 'push'
     needs: [publish]
     runs-on: ubuntu-latest
     permissions:
@@ -57,3 +67,70 @@ jobs:
       - run: gh release create "${{ github.ref_name }}" dist/* --generate-notes
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+  dev-bump:
+    needs: [github-release]
+    if: always() && (needs.github-release.result == 'success' || github.event_name == 'workflow_dispatch')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: main
+
+      - name: Calculate next dev version
+        id: version
+        run: |
+          if [ -n "${{ inputs.next_version }}" ]; then
+            NEXT="${{ inputs.next_version }}"
+          else
+            # Extract current version from tag or pyproject.toml
+            if [ "${{ github.event_name }}" = "push" ]; then
+              CURRENT="${{ github.ref_name }}"
+              CURRENT="${CURRENT#v}"
+            else
+              CURRENT=$(grep -m1 '^version = ' pyproject.toml | sed 's/version = "\(.*\)"/\1/')
+            fi
+            # Parse MAJOR.MINOR.PATCH (strip .devN if present)
+            MAJOR=$(echo "$CURRENT" | cut -d. -f1)
+            MINOR=$(echo "$CURRENT" | cut -d. -f2)
+            NEXT="${MAJOR}.$((MINOR + 1)).0"
+          fi
+          DEV_VERSION="${NEXT}.dev0"
+          echo "next=$NEXT" >> "$GITHUB_OUTPUT"
+          echo "dev_version=$DEV_VERSION" >> "$GITHUB_OUTPUT"
+
+      - name: Set dev version in source files
+        run: |
+          DEV_VERSION="${{ steps.version.outputs.dev_version }}"
+          # Update version in pyproject.toml (project.version)
+          sed -i "s/^version = \".*\"/version = \"${DEV_VERSION}\"/" pyproject.toml
+          # Update version in bumpversion current_version
+          sed -i "s/^current_version = \".*\"/current_version = \"${DEV_VERSION}\"/" pyproject.toml
+          # Update version in __init__.py
+          sed -i "s/^__version__ = \".*\"/__version__ = \"${DEV_VERSION}\"/" caracal/__init__.py
+
+      - name: Create branch, commit and PR
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DEV_VERSION="${{ steps.version.outputs.dev_version }}"
+          BRANCH="chore/dev-version-${DEV_VERSION}"
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git checkout -b "$BRANCH"
+          git add pyproject.toml caracal/__init__.py
+          git commit -m "chore: bump dev version to ${DEV_VERSION}"
+          git push origin "$BRANCH"
+          gh pr create \
+            --title "chore: bump dev version to ${DEV_VERSION}" \
+            --body "Automated post-release version bump to \`${DEV_VERSION}\` (PEP 440 development release).
+
+          This PR sets the version on \`main\` to the next development version after the release.
+
+          - Version: \`${DEV_VERSION}\`
+          - Files updated: \`pyproject.toml\`, \`caracal/__init__.py\`" \
+            --base main \
+            --head "$BRANCH"

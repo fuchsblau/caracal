@@ -65,6 +65,7 @@ Launch with `caracal tui`. Everything is keyboard-driven:
 | `w` | Switch watchlist |
 | `c` | Create watchlist |
 | `d` | Delete watchlist |
+| `s` | Sort watchlist — cycles through Ticker, Chg%, Signal, Confidence (asc/desc) |
 | `a` | Add tickers (batch: `AAPL MSFT GOOGL`) |
 | `x` | Remove ticker |
 | `i` | App info |

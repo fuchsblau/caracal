@@ -44,14 +44,6 @@ class RemoveTickerModal(ModalScreen[bool]):
         align: center middle;
         padding: 1 0 0 0;
     }
-
-    #confirm-btn {
-        margin: 0 1;
-    }
-
-    #cancel-btn {
-        margin: 0 1;
-    }
     """
 
     BINDINGS = [
@@ -70,8 +62,8 @@ class RemoveTickerModal(ModalScreen[bool]):
                 id="remove-hint",
             )
             with Horizontal(id="remove-buttons"):
-                yield Button("Remove", variant="error", id="confirm-btn")
-                yield Button("Cancel", variant="default", id="cancel-btn")
+                yield Button("Remove", variant="error", id="confirm-btn", flat=True)
+                yield Button("Cancel", variant="default", id="cancel-btn", flat=True)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         self.dismiss(event.button.id == "confirm-btn")

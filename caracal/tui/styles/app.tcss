@@ -121,6 +121,11 @@ DataTable > .datatable--header {
     color: $error;
 }
 
+/* Flat Buttons (ADR-022) — uses Textual native flat=True on Button widgets */
+Button {
+    margin: 0 1;
+}
+
 /* Asset Detail View */
 AssetDetailView {
     height: 1fr;

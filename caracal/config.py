@@ -21,6 +21,14 @@ class ConfigError(Exception):
 
 
 @dataclass(frozen=True)
+class WorkerConfig:
+    """Daemon worker configuration."""
+
+    fetch_schedule: str = "0 2 * * 1-5"
+    analysis_schedule: str = "0 3 * * 1-5"
+
+
+@dataclass(frozen=True)
 class CaracalConfig:
     """Caracal configuration with sensible defaults."""
 
@@ -29,6 +37,7 @@ class CaracalConfig:
     default_provider: str = "yahoo"
     default_format: str = "human"
     providers: dict[str, dict[str, str]] = field(default_factory=dict)
+    worker: WorkerConfig = field(default_factory=WorkerConfig)
 
 
 CONFIG_TEMPLATE = """\
@@ -163,6 +172,10 @@ def load_config(path: Path | None = None) -> CaracalConfig:
     providers = dict(data.pop("providers", {}))
     providers = _merge_env_vars(providers)
 
-    valid_fields = {f.name for f in fields(CaracalConfig)} - {"providers"}
+    # Extract worker config
+    worker_data = data.pop("worker", {})
+    worker = WorkerConfig(**worker_data)
+
+    valid_fields = {f.name for f in fields(CaracalConfig)} - {"providers", "worker"}
     filtered = {k: v for k, v in data.items() if k in valid_fields}
-    return CaracalConfig(providers=providers, **filtered)
+    return CaracalConfig(providers=providers, worker=worker, **filtered)

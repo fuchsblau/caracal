@@ -6,6 +6,7 @@ from caracal.config import (
     CONFIG_TEMPLATE,
     CaracalConfig,
     ConfigError,
+    WorkerConfig,
     load_config,
     write_config,
 )
@@ -162,3 +163,27 @@ class TestWriteConfig:
         write_config(original, config_file)
         loaded = load_config(config_file)
         assert loaded == original
+
+
+class TestWorkerConfig:
+    def test_default_worker_config(self):
+        config = CaracalConfig()
+        assert config.worker.fetch_schedule == "0 2 * * 1-5"
+        assert config.worker.analysis_schedule == "0 3 * * 1-5"
+
+    def test_load_config_with_worker_section(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text(
+            '[worker]\n'
+            'fetch_schedule = "0 4 * * 1-5"\n'
+            'analysis_schedule = "0 5 * * 1-5"\n'
+        )
+        config = load_config(config_file)
+        assert config.worker.fetch_schedule == "0 4 * * 1-5"
+        assert config.worker.analysis_schedule == "0 5 * * 1-5"
+
+    def test_load_config_without_worker_section(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('default_period = "6mo"\n')
+        config = load_config(config_file)
+        assert config.worker.fetch_schedule == "0 2 * * 1-5"  # default

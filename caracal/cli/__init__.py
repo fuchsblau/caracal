@@ -72,3 +72,7 @@ cli.add_command(watchlist)
 from caracal.cli.tui import tui  # noqa: E402
 
 cli.add_command(tui)
+
+from caracal.cli.daemon_cmd import daemon  # noqa: E402
+
+cli.add_command(daemon)

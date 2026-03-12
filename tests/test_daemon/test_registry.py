@@ -1,5 +1,6 @@
 """Tests for daemon task registry."""
 
+from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import pytest
@@ -8,7 +9,9 @@ from croniter import croniter
 from caracal.daemon.registry import (
     CronTrigger,
     IntervalTrigger,
+    Task,
     TaskContext,
+    TaskRegistry,
     TaskResult,
 )
 
@@ -76,3 +79,89 @@ class TestTaskResult:
         r = TaskResult(status="error", message="Network timeout")
         assert r.status == "error"
         assert r.items_processed == 0
+
+
+@dataclass
+class MockTask:
+    """Simple mock task for testing."""
+
+    name: str
+    _call_count: int = 0
+
+    async def run(self, context: TaskContext) -> TaskResult:
+        self._call_count += 1
+        return TaskResult(status="ok", items_processed=1)
+
+
+class TestTaskRegistry:
+    def test_register_and_list(self):
+        registry = TaskRegistry()
+        task = MockTask(name="test")
+        trigger = IntervalTrigger(minutes=5)
+        registry.register(task, trigger)
+
+        assert len(registry.task_names) == 1
+        assert "test" in registry.task_names
+
+    def test_get_task(self):
+        registry = TaskRegistry()
+        task = MockTask(name="test")
+        registry.register(task, IntervalTrigger(minutes=5))
+
+        retrieved = registry.get_task("test")
+        assert retrieved is task
+
+    def test_get_task_unknown_raises(self):
+        registry = TaskRegistry()
+        with pytest.raises(KeyError):
+            registry.get_task("nonexistent")
+
+    def test_next_due_interval_first_run(self):
+        registry = TaskRegistry()
+        registry.register(MockTask(name="a"), IntervalTrigger(minutes=5))
+        registry.register(MockTask(name="b"), IntervalTrigger(minutes=10))
+
+        now = datetime(2026, 3, 12, 10, 0, 0)
+        name, wait = registry.next_due(now=now)
+        # Both are due immediately (no last_run), first registered wins
+        assert wait == 0.0
+
+    def test_next_due_after_run(self):
+        registry = TaskRegistry()
+        registry.register(MockTask(name="fast"), IntervalTrigger(minutes=1))
+        registry.register(MockTask(name="slow"), IntervalTrigger(minutes=60))
+
+        now = datetime(2026, 3, 12, 10, 0, 0)
+        registry.record_run("fast", TaskResult(status="ok"), now)
+        registry.record_run("slow", TaskResult(status="ok"), now)
+
+        check_at = datetime(2026, 3, 12, 10, 0, 30)  # 30s later
+        name, wait = registry.next_due(now=check_at)
+        assert name == "fast"
+        assert wait == pytest.approx(30.0, abs=1)
+
+    def test_next_due_with_retries(self):
+        registry = TaskRegistry()
+        registry.register(MockTask(name="task"), IntervalTrigger(minutes=60))
+
+        now = datetime(2026, 3, 12, 10, 0, 0)
+        registry.record_run("task", TaskResult(status="ok"), now)
+
+        retry_at = datetime(2026, 3, 12, 10, 5, 0)
+        retries = {"task": retry_at}
+
+        check_at = datetime(2026, 3, 12, 10, 3, 0)  # 3 min in
+        name, wait = registry.next_due(now=check_at, retries=retries)
+        assert name == "task"
+        assert wait == pytest.approx(120.0, abs=1)  # 2 min until retry
+
+    def test_record_run(self):
+        registry = TaskRegistry()
+        registry.register(MockTask(name="test"), IntervalTrigger(minutes=5))
+
+        now = datetime(2026, 3, 12, 10, 0, 0)
+        result = TaskResult(status="ok", items_processed=3)
+        registry.record_run("test", result, now)
+
+        assert registry.last_run("test") == now
+        assert registry.last_result("test") is result

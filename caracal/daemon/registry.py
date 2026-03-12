@@ -68,3 +68,71 @@ class IntervalTrigger:
         elapsed = (now - last_run).total_seconds()
         remaining = self.minutes * 60 - elapsed
         return max(0.0, remaining)
+
+
+Trigger = CronTrigger | IntervalTrigger
+
+
+class TaskRegistry:
+    """Registry of tasks with their triggers and run history."""
+
+    def __init__(self) -> None:
+        self._tasks: dict[str, tuple[Task, Trigger]] = {}
+        self._last_runs: dict[str, datetime] = {}
+        self._last_results: dict[str, TaskResult] = {}
+
+    def register(self, task: Task, trigger: Trigger) -> None:
+        self._tasks[task.name] = (task, trigger)
+
+    def get_task(self, name: str) -> Task:
+        if name not in self._tasks:
+            raise KeyError(f"Unknown task: {name}")
+        return self._tasks[name][0]
+
+    @property
+    def task_names(self) -> list[str]:
+        return list(self._tasks.keys())
+
+    def next_due(
+        self,
+        now: datetime | None = None,
+        retries: dict[str, datetime] | None = None,
+    ) -> tuple[str, float]:
+        """Find the next task to run and seconds until it's due.
+
+        Returns (task_name, seconds_to_wait). Considers both scheduled
+        tasks and pending retries.
+        """
+        now = now or datetime.now()
+        candidates: list[tuple[str, float]] = []
+
+        for name, (_, trigger) in self._tasks.items():
+            if isinstance(trigger, CronTrigger):
+                last = self._last_runs.get(name, now)
+                seconds = trigger.seconds_until_next(last)
+            else:
+                seconds = trigger.seconds_until_next(
+                    last_run=self._last_runs.get(name), now=now
+                )
+            candidates.append((name, seconds))
+
+        if retries:
+            for name, retry_at in retries.items():
+                seconds = max(0.0, (retry_at - now).total_seconds())
+                candidates.append((name, seconds))
+
+        candidates.sort(key=lambda c: c[1])
+        return candidates[0]
+
+    def record_run(
+        self, name: str, result: TaskResult, at: datetime | None = None
+    ) -> None:
+        at = at or datetime.now()
+        self._last_runs[name] = at
+        self._last_results[name] = result
+
+    def last_run(self, name: str) -> datetime | None:
+        return self._last_runs.get(name)
+
+    def last_result(self, name: str) -> TaskResult | None:
+        return self._last_results.get(name)

@@ -8,7 +8,7 @@ import duckdb
 
 logger = logging.getLogger("caracal")
 
-CURRENT_VERSION = 1
+CURRENT_VERSION = 2
 
 
 def get_schema_version(conn: duckdb.DuckDBPyConnection) -> int:
@@ -59,8 +59,9 @@ def run_migrations(conn: duckdb.DuckDBPyConnection) -> None:
         conn.execute("INSERT INTO schema_version (version) VALUES (?)", [1])
         logger.info("Applied migration 001_initial")
 
-    # Future migrations go here:
-    # if current < 2:
-    #     from caracal.storage.migrations._002_news import migrate
-    #     migrate(conn)
-    #     conn.execute("INSERT INTO schema_version (version) VALUES (?)", [2])
+    if current < 2:
+        from caracal.storage.migrations._002_worker_runs import migrate as migrate_002
+
+        migrate_002(conn)
+        conn.execute("INSERT INTO schema_version (version) VALUES (?)", [2])
+        logger.info("Applied migration 002_worker_runs")

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date
+from datetime import date, datetime
 from pathlib import Path
 from types import TracebackType
 
@@ -295,6 +295,71 @@ class DuckDBStorage:
             logger.debug(
                 "Failed to cache ticker name for %s", ticker, exc_info=True
             )
+
+    # -- Worker runs ------------------------------------------------------
+
+    def store_worker_run(
+        self,
+        task_name: str,
+        started_at: datetime,
+        completed_at: datetime,
+        status: str,
+        message: str | None,
+        items_processed: int,
+    ) -> None:
+        """Record a daemon task run."""
+        try:
+            self._conn.execute(
+                "INSERT INTO worker_runs "
+                "(task_name, started_at, completed_at, status, message, items_processed) "
+                "VALUES (?, ?, ?, ?, ?, ?)",
+                [task_name, started_at, completed_at, status, message, items_processed],
+            )
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to store worker run: {e}") from e
+
+    def get_recent_worker_runs(self, limit: int = 10) -> list[dict]:
+        """Return recent worker runs, most recent first."""
+        try:
+            result = self._conn.execute(
+                "SELECT task_name, started_at, completed_at, status, message, items_processed "
+                "FROM worker_runs ORDER BY started_at DESC LIMIT ?",
+                [limit],
+            ).fetchall()
+            return [
+                {
+                    "task_name": row[0],
+                    "started_at": row[1],
+                    "completed_at": row[2],
+                    "status": row[3],
+                    "message": row[4],
+                    "items_processed": row[5],
+                }
+                for row in result
+            ]
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to get worker runs: {e}") from e
+
+    def get_last_worker_run(self, task_name: str) -> dict | None:
+        """Return the most recent run for a specific task."""
+        try:
+            result = self._conn.execute(
+                "SELECT task_name, started_at, completed_at, status, message, items_processed "
+                "FROM worker_runs WHERE task_name = ? ORDER BY started_at DESC LIMIT 1",
+                [task_name],
+            ).fetchone()
+            if result is None:
+                return None
+            return {
+                "task_name": result[0],
+                "started_at": result[1],
+                "completed_at": result[2],
+                "status": result[3],
+                "message": result[4],
+                "items_processed": result[5],
+            }
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to get last worker run: {e}") from e
 
     # -- lifecycle --------------------------------------------------------
 

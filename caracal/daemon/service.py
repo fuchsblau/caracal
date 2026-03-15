@@ -6,9 +6,11 @@ import asyncio
 import logging
 import os
 import signal
+from collections.abc import Awaitable, Callable
 from pathlib import Path
 
 from caracal.config import CONFIG_DIR, CaracalConfig
+from caracal.daemon.ipc import IPCServer
 from caracal.daemon.registry import (
     CronTrigger,
     TaskContext,
@@ -39,12 +41,17 @@ class DaemonService:
     """Manages daemon lifecycle: start, stop, status, run-once."""
 
     def __init__(
-        self, config: CaracalConfig, pid_dir: Path | None = None
+        self,
+        config: CaracalConfig,
+        pid_dir: Path | None = None,
+        socket_path: Path | None = None,
     ) -> None:
         self._config = config
         self._pid_dir = pid_dir or CONFIG_DIR
         self._pid_path = self._pid_dir / "caracal.pid"
+        self._socket_path = socket_path or self._pid_dir / "caracal.sock"
         self._scheduler_task: asyncio.Task | None = None
+        self._ipc_server: IPCServer | None = None
 
     def _build_registry(self) -> TaskRegistry:
         registry = TaskRegistry()
@@ -68,9 +75,7 @@ class DaemonService:
         pid = int(self._pid_path.read_text().strip())
         try:
             os.kill(pid, 0)
-            raise DaemonAlreadyRunningError(
-                f"Daemon already running (PID {pid})"
-            )
+            raise DaemonAlreadyRunningError(f"Daemon already running (PID {pid})")
         except ProcessLookupError:
             logger.info("Removing stale PID file (PID %d)", pid)
             self._pid_path.unlink(missing_ok=True)
@@ -90,6 +95,14 @@ class DaemonService:
         storage = DuckDBStorage(self._config.db_path)
         context = TaskContext(db=storage, config=self._config)
 
+        # Start IPC server
+        self._ipc_server = IPCServer(
+            socket_path=self._socket_path,
+            context=context,
+            run_tasks_callback=self._make_run_tasks_callback(registry, context),
+        )
+        await self._ipc_server.start()
+
         logger.info(
             "Daemon started (PID %d), %d tasks registered",
             os.getpid(),
@@ -97,7 +110,7 @@ class DaemonService:
         )
 
         self._scheduler_task = asyncio.create_task(
-            scheduler_loop(registry, context)
+            scheduler_loop(registry, context, on_event=self._ipc_server.broadcast)
         )
 
         try:
@@ -105,6 +118,9 @@ class DaemonService:
         except asyncio.CancelledError:
             logger.info("Daemon stopped")
         finally:
+            # Cleanup order per NF-025: IPC → scheduler → DB → PID
+            if self._ipc_server is not None:
+                await self._ipc_server.shutdown()
             self._remove_pid()
             storage.close()
 
@@ -112,6 +128,37 @@ class DaemonService:
         logger.info("Received shutdown signal")
         if self._scheduler_task and not self._scheduler_task.done():
             self._scheduler_task.cancel()
+
+    def _make_run_tasks_callback(
+        self, registry: TaskRegistry, context: TaskContext
+    ) -> Callable[[], Awaitable[None]]:
+        """Create a callback for running all tasks immediately (used by IPC refresh)."""
+
+        async def _run_all_tasks() -> None:
+            for name in registry.task_names:
+                task = registry.get_task(name)
+                logger.info("IPC refresh: running task %s", name)
+                result = await task.run(context)
+                registry.record_run(name, result)
+                if self._ipc_server is not None:
+                    if result.status == "ok":
+                        await self._ipc_server.broadcast(
+                            {
+                                "type": "task_complete",
+                                "task": name,
+                                "items": result.items_processed,
+                            }
+                        )
+                    else:
+                        await self._ipc_server.broadcast(
+                            {
+                                "type": "error",
+                                "task": name,
+                                "msg": result.message,
+                            }
+                        )
+
+        return _run_all_tasks
 
     async def run_once(self) -> list[TaskResult]:
         """Run all registered tasks once and return results."""
@@ -153,9 +200,7 @@ class DaemonService:
             os.kill(pid, signal.SIGTERM)
         except ProcessLookupError:
             pid_path.unlink(missing_ok=True)
-            raise DaemonNotRunningError(
-                "Daemon is not running (stale PID file)"
-            )
+            raise DaemonNotRunningError("Daemon is not running (stale PID file)")
 
     @staticmethod
     def get_status(config: CaracalConfig, pid_dir: Path | None = None) -> dict:
@@ -181,8 +226,10 @@ class DaemonService:
         except Exception:
             pass
 
+        socket_path = pid_dir / "caracal.sock"
         return {
             "running": running,
             "pid": pid if running else None,
+            "socket_path": str(socket_path),
             "recent_runs": recent_runs,
         }

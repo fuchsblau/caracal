@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import logging
+from collections.abc import Awaitable, Callable
 from datetime import datetime, timedelta
 
 from caracal.daemon.registry import TaskContext, TaskRegistry, TaskResult
@@ -17,6 +18,7 @@ async def scheduler_loop(
     registry: TaskRegistry,
     context: TaskContext,
     retry_delay_seconds: int = RETRY_DELAY_SECONDS,
+    on_event: Callable[[dict], Awaitable[None]] | None = None,
 ) -> None:
     """Run tasks on schedule. Loops forever until cancelled.
 
@@ -52,17 +54,27 @@ async def scheduler_loop(
                 result.message,
                 retry_delay_seconds,
             )
+            if on_event is not None:
+                await on_event({"type": "error", "task": name, "msg": result.message})
         elif result.status == "error" and is_retry:
             logger.error(
                 "Task %s retry failed: %s — no further retry",
                 name,
                 result.message,
             )
+            if on_event is not None:
+                await on_event({"type": "error", "task": name, "msg": result.message})
         elif result.status == "ok":
             retried.discard(name)
-            logger.info(
-                "Task %s completed: %d items", name, result.items_processed
-            )
+            logger.info("Task %s completed: %d items", name, result.items_processed)
+            if on_event is not None:
+                await on_event(
+                    {
+                        "type": "task_complete",
+                        "task": name,
+                        "items": result.items_processed,
+                    }
+                )
 
 
 async def _execute_task(task, context: TaskContext) -> TaskResult:

@@ -55,11 +55,24 @@ class TestRunOnce:
     async def test_run_once_no_tickers(self, config, pid_dir):
         service = DaemonService(config, pid_dir=pid_dir)
         results = await service.run_once()
-        # Should run all registered tasks (fetch, analysis, news) but with 0 items
+        # Should run all data tasks (fetch, analysis, news) but with 0 items
         assert len(results) == 3
         for r in results:
             assert r.status == "ok"
             assert r.items_processed == 0
+
+    @pytest.mark.asyncio
+    async def test_run_once_excludes_cleanup(self, config, pid_dir):
+        """AC3: run_once must NOT execute the cleanup task."""
+        service = DaemonService(config, pid_dir=pid_dir)
+        registry = service._build_registry(include_maintenance=False)
+        assert "cleanup" not in registry.task_names
+
+    def test_full_registry_includes_cleanup(self, config, pid_dir):
+        """The full daemon registry includes the cleanup task."""
+        service = DaemonService(config, pid_dir=pid_dir)
+        registry = service._build_registry(include_maintenance=True)
+        assert "cleanup" in registry.task_names
 
 
 class TestStop:

@@ -1,6 +1,6 @@
 """Tests for DuckDB news storage methods."""
 
-from datetime import UTC, datetime
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -135,3 +135,70 @@ class TestGetNewsCount:
         items = [_make_item(id=f"guid-{i}") for i in range(5)]
         storage.store_news(items)
         assert storage.get_news_count() == 5
+
+
+def _insert_with_fetched_at(
+    storage: DuckDBStorage, id: str, fetched_at: datetime
+) -> None:
+    """Insert a news item with a specific fetched_at timestamp."""
+    storage._conn.execute(
+        "INSERT INTO news (id, source, feed, headline, summary, url,"
+        " published_at, fetched_at)"
+        " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
+        [
+            id,
+            "reuters",
+            "business",
+            f"Headline {id}",
+            f"Summary {id}",
+            f"https://example.com/{id}",
+            fetched_at,
+            fetched_at,
+        ],
+    )
+
+
+class TestDeleteOldNews:
+    def test_deletes_old_items(self, storage):
+        now = datetime.now(tz=UTC)
+        _insert_with_fetched_at(storage, "old-1", now - timedelta(days=10))
+        _insert_with_fetched_at(storage, "old-2", now - timedelta(days=8))
+        _insert_with_fetched_at(storage, "recent", now - timedelta(days=1))
+
+        deleted = storage.delete_old_news(retention_days=7)
+
+        assert deleted == 2
+        assert storage.get_news_count() == 1
+
+    def test_respects_retention_days(self, storage):
+        now = datetime.now(tz=UTC)
+        _insert_with_fetched_at(storage, "keep", now - timedelta(days=10))
+        _insert_with_fetched_at(storage, "delete", now - timedelta(days=20))
+
+        deleted = storage.delete_old_news(retention_days=14)
+
+        assert deleted == 1
+        assert storage.get_news_count() == 1
+
+    def test_default_retention_7_days(self, storage):
+        now = datetime.now(tz=UTC)
+        _insert_with_fetched_at(storage, "old", now - timedelta(days=8))
+        _insert_with_fetched_at(storage, "recent", now - timedelta(days=6))
+
+        deleted = storage.delete_old_news()
+
+        assert deleted == 1
+        assert storage.get_news_count() == 1
+
+    def test_nothing_to_delete(self, storage):
+        now = datetime.now(tz=UTC)
+        _insert_with_fetched_at(storage, "recent", now - timedelta(hours=1))
+
+        deleted = storage.delete_old_news()
+
+        assert deleted == 0
+        assert storage.get_news_count() == 1
+
+    def test_empty_table(self, storage):
+        deleted = storage.delete_old_news()
+        assert deleted == 0

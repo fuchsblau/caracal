@@ -26,6 +26,7 @@ class WorkerConfig:
 
     fetch_schedule: str = "0 2 * * 1-5"
     analysis_schedule: str = "0 3 * * 1-5"
+    retention_days: int = 7
 
 
 @dataclass(frozen=True)

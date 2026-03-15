@@ -171,10 +171,14 @@ class TestWorkerConfig:
         assert config.worker.fetch_schedule == "0 2 * * 1-5"
         assert config.worker.analysis_schedule == "0 3 * * 1-5"
 
+    def test_default_retention_days(self):
+        config = CaracalConfig()
+        assert config.worker.retention_days == 7
+
     def test_load_config_with_worker_section(self, tmp_path):
         config_file = tmp_path / "config.toml"
         config_file.write_text(
-            '[worker]\n'
+            "[worker]\n"
             'fetch_schedule = "0 4 * * 1-5"\n'
             'analysis_schedule = "0 5 * * 1-5"\n'
         )
@@ -187,3 +191,15 @@ class TestWorkerConfig:
         config_file.write_text('default_period = "6mo"\n')
         config = load_config(config_file)
         assert config.worker.fetch_schedule == "0 2 * * 1-5"  # default
+
+    def test_load_config_with_custom_retention_days(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text("[worker]\nretention_days = 14\n")
+        config = load_config(config_file)
+        assert config.worker.retention_days == 14
+
+    def test_retention_days_default_when_not_in_config(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('[worker]\nfetch_schedule = "0 4 * * 1-5"\n')
+        config = load_config(config_file)
+        assert config.worker.retention_days == 7

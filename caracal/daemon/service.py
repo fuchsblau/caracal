@@ -20,6 +20,7 @@ from caracal.daemon.registry import (
 )
 from caracal.daemon.scheduler import scheduler_loop
 from caracal.daemon.tasks.analysis import AnalysisTask
+from caracal.daemon.tasks.cleanup import CleanupTask
 from caracal.daemon.tasks.fetch import FetchTask
 from caracal.daemon.tasks.news import NewsFetchTask
 from caracal.storage.duckdb import DuckDBStorage
@@ -55,12 +56,14 @@ class DaemonService:
         self._scheduler_task: asyncio.Task | None = None
         self._ipc_server: IPCServer | None = None
 
-    def _build_registry(self) -> TaskRegistry:
+    def _build_registry(self, *, include_maintenance: bool = True) -> TaskRegistry:
         registry = TaskRegistry()
         worker = self._config.worker
         registry.register(FetchTask(), CronTrigger(worker.fetch_schedule))
         registry.register(AnalysisTask(), CronTrigger(worker.analysis_schedule))
         registry.register(NewsFetchTask(), IntervalTrigger(minutes=5))
+        if include_maintenance:
+            registry.register(CleanupTask(), CronTrigger("0 4 * * *"))
         return registry
 
     # -- PID file management ---
@@ -164,8 +167,12 @@ class DaemonService:
         return _run_all_tasks
 
     async def run_once(self) -> list[TaskResult]:
-        """Run all registered tasks once and return results."""
-        registry = self._build_registry()
+        """Run all data tasks once and return results.
+
+        Maintenance tasks (e.g. cleanup) are excluded — they only run
+        in the scheduled daemon loop.
+        """
+        registry = self._build_registry(include_maintenance=False)
         storage = DuckDBStorage(self._config.db_path)
         context = TaskContext(db=storage, config=self._config)
 

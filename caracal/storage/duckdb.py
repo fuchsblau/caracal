@@ -292,9 +292,7 @@ class DuckDBStorage:
                 [ticker, name],
             )
         except duckdb.Error:
-            logger.debug(
-                "Failed to cache ticker name for %s", ticker, exc_info=True
-            )
+            logger.debug("Failed to cache ticker name for %s", ticker, exc_info=True)
 
     # -- News -------------------------------------------------------------
 
@@ -364,6 +362,23 @@ class DuckDBStorage:
             return result[0] if result else 0
         except duckdb.Error as e:
             raise StorageError(f"Failed to get news count: {e}") from e
+
+    def delete_old_news(self, retention_days: int = 7) -> int:
+        """Delete news items older than retention_days.
+
+        Returns count of deleted rows.
+        """
+        try:
+            count_before = self.get_news_count()
+            interval = f"{int(retention_days)} days"
+            self._conn.execute(
+                "DELETE FROM news"
+                f" WHERE fetched_at < CURRENT_TIMESTAMP - INTERVAL '{interval}'",
+            )
+            count_after = self.get_news_count()
+            return count_before - count_after
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to delete old news: {e}") from e
 
     # -- Worker runs ------------------------------------------------------
 

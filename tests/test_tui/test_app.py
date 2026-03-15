@@ -21,14 +21,16 @@ def _make_ohlcv(base_price: float = 150.0, days: int = 31) -> pd.DataFrame:
     rows = []
     for i in range(days):
         d = date.today() - timedelta(days=days - 1 - i)
-        rows.append({
-            "date": d,
-            "open": base_price + i * 0.1,
-            "high": base_price + 2 + i * 0.1,
-            "low": base_price - 1 + i * 0.1,
-            "close": base_price + 1 + i * 0.1,
-            "volume": 1_000_000,
-        })
+        rows.append(
+            {
+                "date": d,
+                "open": base_price + i * 0.1,
+                "high": base_price + 2 + i * 0.1,
+                "low": base_price - 1 + i * 0.1,
+                "close": base_price + 1 + i * 0.1,
+                "volume": 1_000_000,
+            }
+        )
     return pd.DataFrame(rows)
 
 
@@ -596,6 +598,7 @@ class TestDeleteWatchlist:
             await pilot.pause()
             # Should not have pushed a modal
             from caracal.tui.screens.delete_watchlist import DeleteWatchlistModal
+
             assert not isinstance(app.screen, DeleteWatchlistModal)
 
     @pytest.mark.asyncio
@@ -662,7 +665,7 @@ class TestAddTicker:
             panel = app.query_one(WatchlistPanel)
             table = panel.get_active_table()
             count_before = table.row_count
-            app._on_add_result(None)
+            await app._on_add_result(None)
             assert table.row_count == count_before
 
     @pytest.mark.asyncio
@@ -670,7 +673,7 @@ class TestAddTicker:
         """_on_add_result with tickers adds them and reloads."""
         app = _make_app_with_watchlists(config, {"wl": ["AAPL"]})
         async with app.run_test():
-            app._on_add_result(["NVDA"])
+            await app._on_add_result(["NVDA"])
             panel = app.query_one(WatchlistPanel)
             table = panel.get_active_table()
             # NVDA may not have OHLCV data, but it should still be in the list
@@ -682,7 +685,7 @@ class TestAddTicker:
         app = _make_app_with_watchlists(config, {"wl": ["AAPL"]})
         async with app.run_test():
             # Adding AAPL again should report duplicate
-            app._on_add_result(["AAPL"])
+            await app._on_add_result(["AAPL"])
 
     @pytest.mark.asyncio
     async def test_on_add_result_storage_error(self, config):
@@ -694,7 +697,7 @@ class TestAddTicker:
             with patch.object(
                 app.data_service, "add_to_watchlist", side_effect=StorageError("boom")
             ):
-                app._on_add_result(["NVDA"])
+                await app._on_add_result(["NVDA"])
                 # Should not crash, just notify
 
 
@@ -742,7 +745,7 @@ class TestRemoveTicker:
         app = _make_app_with_watchlists(config)
         async with app.run_test():
             app._pending_remove_ticker = "AAPL"
-            app._on_remove_result(False)
+            await app._on_remove_result(False)
             # Should not crash
 
     @pytest.mark.asyncio
@@ -751,7 +754,7 @@ class TestRemoveTicker:
         app = _make_app_with_watchlists(config, {"wl": ["AAPL", "MSFT"]})
         async with app.run_test():
             app._pending_remove_ticker = "AAPL"
-            app._on_remove_result(True)
+            await app._on_remove_result(True)
             panel = app.query_one(WatchlistPanel)
             table = panel.get_active_table()
             # Table should have been reloaded
@@ -763,7 +766,7 @@ class TestRemoveTicker:
         app = _make_app_with_watchlists(config)
         async with app.run_test():
             app._pending_remove_ticker = None
-            app._on_remove_result(True)
+            await app._on_remove_result(True)
 
     @pytest.mark.asyncio
     async def test_on_remove_result_storage_error(self, config):
@@ -778,7 +781,7 @@ class TestRemoveTicker:
                 "remove_from_watchlist",
                 side_effect=StorageError("boom"),
             ):
-                app._on_remove_result(True)
+                await app._on_remove_result(True)
 
 
 # ---------------------------------------------------------------------------
@@ -850,9 +853,9 @@ class TestFocusedAsset:
         """focused_asset must be a reactive property for automatic propagation."""
         from textual.reactive import reactive
 
-        assert isinstance(
-            CaracalApp.__dict__["focused_asset"], reactive
-        ), "focused_asset should be a Textual reactive"
+        assert isinstance(CaracalApp.__dict__["focused_asset"], reactive), (
+            "focused_asset should be a Textual reactive"
+        )
 
     @pytest.mark.asyncio
     async def test_focused_asset_set_on_drill_down(self, config):
@@ -935,9 +938,9 @@ class TestFocusedAsset:
         """active_watchlist must also be a reactive property."""
         from textual.reactive import reactive
 
-        assert isinstance(
-            CaracalApp.__dict__["active_watchlist"], reactive
-        ), "active_watchlist should be a Textual reactive"
+        assert isinstance(CaracalApp.__dict__["active_watchlist"], reactive), (
+            "active_watchlist should be a Textual reactive"
+        )
 
     @pytest.mark.asyncio
     async def test_focused_asset_preserved_on_tab_switch(self, config):
@@ -1007,7 +1010,9 @@ class TestFooterTimestamp:
         app = _make_app_with_watchlists(config)
         async with app.run_test():
             with patch.object(
-                app.data_service, "get_last_fetch_time", return_value="2024-01-15 10:30:00"
+                app.data_service,
+                "get_last_fetch_time",
+                return_value="2024-01-15 10:30:00",
             ):
                 app._update_footer_from_db()
                 footer = app.query_one(CaracalFooter)

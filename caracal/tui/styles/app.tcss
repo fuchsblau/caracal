@@ -48,7 +48,22 @@ WatchlistPanel {
 }
 
 #watchlist-panel {
-    width: 1fr;
+    width: 65%;
+}
+
+#side-panel {
+    width: 35%;
+}
+
+#news-title {
+    padding: 0 1;
+    color: $primary;
+    text-style: bold;
+    height: auto;
+}
+
+#news-scroll {
+    height: 1fr;
 }
 
 #watchlist-tabs {

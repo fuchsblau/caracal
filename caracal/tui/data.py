@@ -11,6 +11,7 @@ from caracal.tui.services.analysis_service import (
     INDICATOR_DISPLAY_NAMES,
     AnalysisService,
 )
+from caracal.tui.services.news_service import NewsService
 from caracal.tui.services.refresh_service import RefreshService
 from caracal.tui.services.watchlist_service import WatchlistService
 
@@ -42,6 +43,7 @@ class DataService:
         self.watchlists = WatchlistService(config, self._storage)
         self.analysis = AnalysisService(config, self._storage)
         self.refresh = RefreshService(config, self._storage)
+        self.news = NewsService(config, self._storage)
 
     def close(self) -> None:
         if self._owns_storage:
@@ -114,6 +116,12 @@ class DataService:
     def _fetch_ticker_names(self, tickers: list[str]) -> None:
         """Delegate to RefreshService (backwards compat)."""
         self.refresh._fetch_ticker_names(tickers)
+
+    # -- News delegates -------------------------------------------------------
+
+    def get_news(self, limit: int = 50) -> list[dict]:
+        """Return recent news items with relative timestamps."""
+        return self.news.get_recent_news(limit=limit)
 
     # -- App info -------------------------------------------------------------
 

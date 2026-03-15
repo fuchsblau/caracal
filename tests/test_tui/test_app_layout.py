@@ -20,11 +20,20 @@ def _make_app_with_data():
     storage.add_to_watchlist("tech", "AAPL")
     import pandas as pd
     from datetime import date, timedelta
+
     rows = []
     for i in range(31):
         d = date.today() - timedelta(days=30 - i)
-        rows.append({"date": d, "open": 170 + i * 0.1, "high": 172 + i * 0.1,
-                      "low": 168 + i * 0.1, "close": 171 + i * 0.1, "volume": 1000000})
+        rows.append(
+            {
+                "date": d,
+                "open": 170 + i * 0.1,
+                "high": 172 + i * 0.1,
+                "low": 168 + i * 0.1,
+                "close": 171 + i * 0.1,
+                "volume": 1000000,
+            }
+        )
     storage.store_ohlcv("AAPL", pd.DataFrame(rows))
     data_service = DataService(config, storage=storage)
     return CaracalApp(config=config, data_service=data_service)
@@ -42,7 +51,7 @@ class TestAppLayout:
         app = _make_app_with_data()
         async with app.run_test():
             side = app.query_one(SidePanel)
-            assert not side.display  # collapsed by default
+            assert side.display  # visible with news panel
 
     @pytest.mark.asyncio
     async def test_focused_asset_reactive(self):
@@ -171,10 +180,16 @@ def _make_multi_watchlist_app(watchlists: dict[str, list[str]] | None = None):
             rows = []
             for i in range(31):
                 d = date.today() - timedelta(days=30 - i)
-                rows.append({
-                    "date": d, "open": 100 + i, "high": 102 + i,
-                    "low": 98 + i, "close": 101 + i, "volume": 500000,
-                })
+                rows.append(
+                    {
+                        "date": d,
+                        "open": 100 + i,
+                        "high": 102 + i,
+                        "low": 98 + i,
+                        "close": 101 + i,
+                        "volume": 500000,
+                    }
+                )
             storage.store_ohlcv(ticker, pd.DataFrame(rows))
     data_service = DataService(config, storage=storage)
     return CaracalApp(config=config, data_service=data_service)
@@ -194,32 +209,30 @@ class TestSplitLayout:
             assert "side-panel" in children_ids
 
     @pytest.mark.asyncio
-    async def test_watchlist_panel_takes_full_width(self):
-        """WatchlistPanel CSS width is 1fr (fills available space)."""
+    async def test_watchlist_panel_takes_65_percent_width(self):
+        """WatchlistPanel CSS width is 65% (leaving room for news panel)."""
         app = _make_app_with_data()
         async with app.run_test():
             panel = app.query_one("#watchlist-panel", WatchlistPanel)
-            # 1fr in Textual maps to Fraction(1)
             assert panel.styles.width is not None
-            assert panel.styles.width.value == 1
+            assert panel.styles.width.value == 65
 
     @pytest.mark.asyncio
-    async def test_side_panel_width_is_30_percent(self):
-        """SidePanel has a 30% width rule in its DEFAULT_CSS."""
+    async def test_side_panel_width_is_35_percent(self):
+        """SidePanel has a 35% width rule for the news panel."""
         app = _make_app_with_data()
         async with app.run_test():
             side = app.query_one("#side-panel", SidePanel)
-            # Even though display=none, the width rule should be set
             assert side.styles.width is not None
-            assert side.styles.width.value == 30
+            assert side.styles.width.value == 35
 
     @pytest.mark.asyncio
-    async def test_side_panel_collapsed_by_default(self):
-        """SidePanel has display=none on mount (collapsed for future use)."""
+    async def test_side_panel_visible_by_default(self):
+        """SidePanel is visible by default (news panel active)."""
         app = _make_app_with_data()
         async with app.run_test():
             side = app.query_one("#side-panel", SidePanel)
-            assert not side.display
+            assert side.display
 
     @pytest.mark.asyncio
     async def test_tab_count_matches_watchlist_count(self):

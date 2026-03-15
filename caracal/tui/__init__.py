@@ -37,6 +37,7 @@ class CaracalApp(App):
         Binding("d", "delete_watchlist", "-List"),
         Binding("a", "add_ticker", "+Ticker"),
         Binding("x", "remove_ticker", "-Ticker"),
+        Binding("n", "focus_news", "News"),
         Binding("1", "switch_tab('1')", "Tab 1", show=False),
         Binding("2", "switch_tab('2')", "Tab 2", show=False),
         Binding("3", "switch_tab('3')", "Tab 3", show=False),
@@ -87,6 +88,7 @@ class CaracalApp(App):
         if self._watchlist_names:
             self.active_watchlist = self._watchlist_names[0]
         self._update_footer_from_db()
+        self._load_news()
 
     def _update_footer_from_db(self) -> None:
         """Set footer timestamp from DB file modification time."""
@@ -94,8 +96,15 @@ class CaracalApp(App):
         if ts:
             self.query_one(CaracalFooter).last_updated = ts
 
+    def _load_news(self) -> None:
+        """Load news items into the side panel."""
+        side = self.query_one("#side-panel", SidePanel)
+        items = self.data_service.get_news()
+        side.load_news(items)
+
     async def _auto_refresh(self) -> None:
         """Auto-refresh from DB cache."""
+        self._load_news()
         name = self.active_watchlist
         if not name:
             return
@@ -167,7 +176,9 @@ class CaracalApp(App):
         rows = self.data_service.refresh_watchlist_live(name)
         panel = self.query_one("#watchlist-panel", WatchlistPanel)
         panel.refresh_watchlist(name, rows)
-        self.query_one(CaracalFooter).last_updated = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        self.query_one(CaracalFooter).last_updated = datetime.now().strftime(
+            "%Y-%m-%d %H:%M:%S"
+        )
 
     def action_switch_tab(self, number: str) -> None:
         idx = int(number) - 1
@@ -296,6 +307,17 @@ class CaracalApp(App):
         detail = self.data_service.get_stock_detail(event.ticker)
         panel.show_detail(detail)
         self.focused_asset = event.ticker
+
+    # -- News panel -----------------------------------------------------------
+
+    def action_focus_news(self) -> None:
+        """Move focus to the news side panel."""
+        side = self.query_one("#side-panel", SidePanel)
+        news_items = side.query("NewsItemWidget")
+        if news_items:
+            news_items.first().focus()
+        else:
+            side.focus()
 
     # -- Info screen -----------------------------------------------------------
 

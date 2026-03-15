@@ -296,6 +296,75 @@ class DuckDBStorage:
                 "Failed to cache ticker name for %s", ticker, exc_info=True
             )
 
+    # -- News -------------------------------------------------------------
+
+    def store_news(self, items: list) -> int:
+        """Store news items with INSERT OR IGNORE semantics.
+
+        Returns count of new items.
+        """
+        if not items:
+            return 0
+        new_count = 0
+        try:
+            for item in items:
+                result = self._conn.execute(
+                    "SELECT 1 FROM news WHERE id = ?", [item.id]
+                ).fetchone()
+                if result is None:
+                    self._conn.execute(
+                        "INSERT INTO news"
+                        " (id, source, feed, headline,"
+                        " summary, url, published_at)"
+                        " VALUES (?, ?, ?, ?, ?, ?, ?)",
+                        [
+                            item.id,
+                            item.source,
+                            item.feed,
+                            item.headline,
+                            item.summary,
+                            item.url,
+                            item.published_at,
+                        ],
+                    )
+                    new_count += 1
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to store news: {e}") from e
+        return new_count
+
+    def get_news(self, limit: int = 50) -> list[dict]:
+        """Return recent news items, most recent first."""
+        try:
+            result = self._conn.execute(
+                "SELECT id, source, feed, headline,"
+                " summary, url, published_at, fetched_at"
+                " FROM news ORDER BY published_at DESC LIMIT ?",
+                [limit],
+            ).fetchall()
+            return [
+                {
+                    "id": row[0],
+                    "source": row[1],
+                    "feed": row[2],
+                    "headline": row[3],
+                    "summary": row[4],
+                    "url": row[5],
+                    "published_at": row[6],
+                    "fetched_at": row[7],
+                }
+                for row in result
+            ]
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to get news: {e}") from e
+
+    def get_news_count(self) -> int:
+        """Return total number of news items."""
+        try:
+            result = self._conn.execute("SELECT COUNT(*) FROM news").fetchone()
+            return result[0] if result else 0
+        except duckdb.Error as e:
+            raise StorageError(f"Failed to get news count: {e}") from e
+
     # -- Worker runs ------------------------------------------------------
 
     def store_worker_run(

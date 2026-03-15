@@ -13,6 +13,7 @@ from caracal.config import CONFIG_DIR, CaracalConfig
 from caracal.daemon.ipc import IPCServer
 from caracal.daemon.registry import (
     CronTrigger,
+    IntervalTrigger,
     TaskContext,
     TaskRegistry,
     TaskResult,
@@ -20,6 +21,7 @@ from caracal.daemon.registry import (
 from caracal.daemon.scheduler import scheduler_loop
 from caracal.daemon.tasks.analysis import AnalysisTask
 from caracal.daemon.tasks.fetch import FetchTask
+from caracal.daemon.tasks.news import NewsFetchTask
 from caracal.storage.duckdb import DuckDBStorage
 
 logger = logging.getLogger("caracal.daemon")
@@ -58,6 +60,7 @@ class DaemonService:
         worker = self._config.worker
         registry.register(FetchTask(), CronTrigger(worker.fetch_schedule))
         registry.register(AnalysisTask(), CronTrigger(worker.analysis_schedule))
+        registry.register(NewsFetchTask(), IntervalTrigger(minutes=5))
         return registry
 
     # -- PID file management ---

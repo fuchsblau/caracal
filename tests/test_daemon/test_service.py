@@ -55,8 +55,8 @@ class TestRunOnce:
     async def test_run_once_no_tickers(self, config, pid_dir):
         service = DaemonService(config, pid_dir=pid_dir)
         results = await service.run_once()
-        # Should run both tasks but with 0 items
-        assert len(results) == 2
+        # Should run all registered tasks (fetch, analysis, news) but with 0 items
+        assert len(results) == 3
         for r in results:
             assert r.status == "ok"
             assert r.items_processed == 0

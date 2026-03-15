@@ -24,6 +24,7 @@ dependencies = [
     "pandas>=2.0",
     "duckdb>=1.0",
     "croniter>=2.0",
+    "feedparser>=6.0",
 ]
 
 [project.urls]

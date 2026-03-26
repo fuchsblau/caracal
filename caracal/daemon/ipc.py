@@ -218,8 +218,9 @@ class IPCServer:
                     self._run_tasks_callback()
                 )
                 return {"type": "result", "cmd": "refresh", "status": "ok"}
-            except Exception as e:
-                return {"type": "error", "cmd": "refresh", "msg": str(e)}
+            except Exception:
+                logger.exception("Failed to trigger refresh")
+                return {"type": "error", "cmd": "refresh", "msg": "Failed to trigger refresh"}
         return {"type": "result", "cmd": "refresh", "status": "ok"}
 
     async def _handle_create_watchlist(self, message: dict) -> dict:
@@ -239,11 +240,12 @@ class IPCServer:
                 "status": "ok",
                 "name": name,
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Failed to create watchlist")
             return {
                 "type": "error",
                 "cmd": "create_watchlist",
-                "msg": str(e),
+                "msg": "Failed to create watchlist",
             }
 
     async def _handle_add_ticker(self, message: dict) -> dict:
@@ -272,11 +274,12 @@ class IPCServer:
                 "watchlist": watchlist,
                 "tickers": tickers,
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Failed to add ticker")
             return {
                 "type": "error",
                 "cmd": "add_ticker",
-                "msg": str(e),
+                "msg": "Failed to add ticker",
             }
 
     async def _handle_status(self, message: dict) -> dict:
@@ -288,11 +291,12 @@ class IPCServer:
                 "clients": self.client_count,
                 "recent_runs": recent_runs,
             }
-        except Exception as e:
+        except Exception:
+            logger.exception("Failed to get status")
             return {
                 "type": "error",
                 "cmd": "status",
-                "msg": str(e),
+                "msg": "Failed to get status",
             }
 
     # -- Helper ---

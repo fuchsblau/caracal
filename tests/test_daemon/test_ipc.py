@@ -370,7 +370,7 @@ class TestCommandCreateWatchlist:
         response = await recv_message(reader)
 
         assert response["type"] == "error"
-        assert "already exists" in response["msg"]
+        assert response["msg"] == "Failed to create watchlist"
 
         close_writer(writer)
 
@@ -446,7 +446,7 @@ class TestCommandAddTicker:
         response = await recv_message(reader)
 
         assert response["type"] == "error"
-        assert "not found" in response["msg"]
+        assert response["msg"] == "Failed to add ticker"
 
         close_writer(writer)
 
@@ -628,7 +628,7 @@ class TestSchedulerEventCallback:
         error_events = [e for e in events if e["type"] == "error"]
         assert len(error_events) >= 1
         assert error_events[0]["task"] == "fail_task"
-        assert error_events[0]["msg"] == "something broke"
+        assert error_events[0]["msg"] == "Task fail_task failed"
 
     @pytest.mark.asyncio
     async def test_on_event_none_is_safe(self):
@@ -656,6 +656,31 @@ class TestSchedulerEventCallback:
 
         storage.close()
         assert task.count == 2
+
+
+# -- Error sanitization tests ---
+
+
+class TestErrorSanitization:
+    @pytest.mark.asyncio
+    async def test_status_error_returns_generic_message(self, socket_path):
+        """Status query on broken DB returns generic error."""
+        s = DuckDBStorage(":memory:")
+        ctx = TaskContext(db=s, config=CaracalConfig())
+        s.close()  # close DB to force errors
+
+        server = IPCServer(socket_path=socket_path, context=ctx)
+        await server.start()
+
+        reader, writer = await connect_client(socket_path)
+        await send_message(writer, {"type": "query", "cmd": "status"})
+        response = await recv_message(reader)
+
+        assert response["type"] == "error"
+        assert response["msg"] == "Failed to get status"
+
+        close_writer(writer)
+        await server.shutdown()
 
 
 # -- Refresh rate limiting tests ---

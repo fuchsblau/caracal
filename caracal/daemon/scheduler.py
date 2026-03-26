@@ -55,7 +55,7 @@ async def scheduler_loop(
                 retry_delay_seconds,
             )
             if on_event is not None:
-                await on_event({"type": "error", "task": name, "msg": result.message})
+                await on_event({"type": "error", "task": name, "msg": f"Task {name} failed"})
         elif result.status == "error" and is_retry:
             logger.error(
                 "Task %s retry failed: %s — no further retry",
@@ -63,7 +63,7 @@ async def scheduler_loop(
                 result.message,
             )
             if on_event is not None:
-                await on_event({"type": "error", "task": name, "msg": result.message})
+                await on_event({"type": "error", "task": name, "msg": f"Task {name} failed"})
         elif result.status == "ok":
             retried.discard(name)
             logger.info("Task %s completed: %d items", name, result.items_processed)
@@ -85,7 +85,7 @@ async def _execute_task(task, context: TaskContext) -> TaskResult:
         raise
     except Exception as e:
         logger.exception("Task %s raised unexpected exception", task.name)
-        return TaskResult(status="error", message=str(e))
+        return TaskResult(status="error", message=f"Task {task.name} failed")
 
 
 def _persist_run(context: TaskContext, name: str, result: TaskResult) -> None:

@@ -202,3 +202,40 @@ class TestDeleteOldNews:
     def test_empty_table(self, storage):
         deleted = storage.delete_old_news()
         assert deleted == 0
+
+
+class TestDeleteOldNewsParameterized:
+    def test_delete_old_news_uses_parameterized_query(self, storage):
+        """Verify delete_old_news works correctly with parameterized approach."""
+        from datetime import datetime, timedelta
+
+        from caracal.news.protocol import NewsItem
+
+        old_item = NewsItem(
+            id="old-1",
+            source="test",
+            feed="test",
+            headline="Old news",
+            summary=None,
+            url=None,
+            published_at=datetime.now() - timedelta(days=30),
+        )
+        new_item = NewsItem(
+            id="new-1",
+            source="test",
+            feed="test",
+            headline="New news",
+            summary=None,
+            url=None,
+            published_at=datetime.now(),
+        )
+        storage.store_news([old_item, new_item])
+
+        # Manually backdate the fetched_at of old item
+        storage._conn.execute(
+            "UPDATE news SET fetched_at = CURRENT_TIMESTAMP - INTERVAL '30 days' WHERE id = 'old-1'"
+        )
+
+        deleted = storage.delete_old_news(retention_days=7)
+        assert deleted == 1
+        assert storage.get_news_count() == 1

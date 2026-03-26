@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import logging
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from pathlib import Path
 from types import TracebackType
 
@@ -370,10 +370,10 @@ class DuckDBStorage:
         """
         try:
             count_before = self.get_news_count()
-            interval = f"{int(retention_days)} days"
+            cutoff = datetime.now() - timedelta(days=retention_days)
             self._conn.execute(
-                "DELETE FROM news"
-                f" WHERE fetched_at < CURRENT_TIMESTAMP - INTERVAL '{interval}'",
+                "DELETE FROM news WHERE fetched_at < ?",
+                [cutoff],
             )
             count_after = self.get_news_count()
             return count_before - count_after

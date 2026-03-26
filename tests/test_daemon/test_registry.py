@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from datetime import datetime, timedelta
 
 import pytest
-from croniter import croniter
+
 
 from caracal.daemon.registry import (
     CronTrigger,

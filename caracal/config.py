@@ -5,9 +5,10 @@ from __future__ import annotations
 import os
 import tomllib
 from dataclasses import dataclass, field, fields
+from datetime import datetime
 from pathlib import Path
 
-from croniter import croniter
+from cronsim import CronSim, CronSimError
 
 _KNOWN_PROVIDERS = {"yahoo", "massive", "ibkr", "alphavantage", "eodhd", "finnhub"}
 
@@ -182,7 +183,9 @@ def load_config(path: Path | None = None) -> CaracalConfig:
     # Validate worker cron expressions
     for field_name in ("fetch_schedule", "analysis_schedule"):
         value = getattr(worker, field_name)
-        if not croniter.is_valid(value):
+        try:
+            CronSim(value, datetime(2000, 1, 1))
+        except CronSimError:
             raise ConfigError(
                 f"Invalid {field_name} '{value}' in {config_path}. "
                 f"Must be a valid cron expression."

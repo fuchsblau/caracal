@@ -6,7 +6,7 @@ from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Literal, Protocol
 
-from croniter import croniter
+from cronsim import CronSim
 
 from caracal.config import CaracalConfig
 from caracal.storage.duckdb import DuckDBStorage
@@ -45,8 +45,7 @@ class CronTrigger:
     expression: str
 
     def next_fire_time(self, after: datetime) -> datetime:
-        cron = croniter(self.expression, after)
-        return cron.get_next(datetime)
+        return next(CronSim(self.expression, after))
 
     def seconds_until_next(self, after: datetime) -> float:
         next_time = self.next_fire_time(after)

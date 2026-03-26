@@ -23,7 +23,7 @@ dependencies = [
     "rich>=13.0",
     "pandas>=2.0",
     "duckdb>=1.0",
-    "croniter>=2.0",
+    "cronsim>=2.6",
     "feedparser>=6.0",
 ]
 

@@ -9,6 +9,7 @@ from __future__ import annotations
 import asyncio
 import json
 import logging
+import time
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
@@ -29,12 +30,16 @@ class IPCServer:
         socket_path: Path,
         context: TaskContext,
         run_tasks_callback: Callable[[], Awaitable[None]] | None = None,
+        refresh_cooldown_seconds: int = 60,
     ) -> None:
         self._socket_path = socket_path
         self._context = context
         self._clients: set[asyncio.StreamWriter] = set()
         self._server: asyncio.Server | None = None
         self._run_tasks_callback = run_tasks_callback
+        self._refresh_cooldown = refresh_cooldown_seconds
+        self._last_refresh_time: float = 0.0
+        self._refresh_task: asyncio.Task | None = None
         self._command_handlers: dict[str, Callable[..., Awaitable[dict]]] = {
             "refresh": self._handle_refresh,
             "create_watchlist": self._handle_create_watchlist,
@@ -182,10 +187,36 @@ class IPCServer:
     # -- Command handlers ---
 
     async def _handle_refresh(self, message: dict) -> dict:
-        """Handle refresh command: trigger immediate data fetch."""
+        """Handle refresh command: trigger immediate data fetch.
+
+        Rate-limited: rejects if a refresh is already running or if the
+        cooldown period has not elapsed since the last refresh.
+        """
+        # Guard: concurrent execution
+        if self._refresh_task is not None and not self._refresh_task.done():
+            return {
+                "type": "error",
+                "cmd": "refresh",
+                "msg": "Refresh already running",
+            }
+
+        # Guard: cooldown period
+        now = time.monotonic()
+        elapsed = now - self._last_refresh_time
+        if self._last_refresh_time > 0 and elapsed < self._refresh_cooldown:
+            remaining = int(self._refresh_cooldown - elapsed)
+            return {
+                "type": "error",
+                "cmd": "refresh",
+                "msg": f"Refresh cooldown: {remaining}s remaining",
+            }
+
         if self._run_tasks_callback is not None:
             try:
-                asyncio.create_task(self._run_tasks_callback())
+                self._last_refresh_time = time.monotonic()
+                self._refresh_task = asyncio.create_task(
+                    self._run_tasks_callback()
+                )
                 return {"type": "result", "cmd": "refresh", "status": "ok"}
             except Exception as e:
                 return {"type": "error", "cmd": "refresh", "msg": str(e)}

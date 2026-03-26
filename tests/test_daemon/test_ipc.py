@@ -656,3 +656,118 @@ class TestSchedulerEventCallback:
 
         storage.close()
         assert task.count == 2
+
+
+# -- Refresh rate limiting tests ---
+
+
+class TestRefreshRateLimit:
+    @pytest.mark.asyncio
+    async def test_refresh_rejected_within_cooldown(self, socket_path, context):
+        """Second refresh within cooldown period should be rejected."""
+        callback_called = asyncio.Event()
+
+        async def mock_callback():
+            callback_called.set()
+
+        server = IPCServer(
+            socket_path=socket_path,
+            context=context,
+            run_tasks_callback=mock_callback,
+            refresh_cooldown_seconds=60,
+        )
+        await server.start()
+
+        reader, writer = await connect_client(socket_path)
+
+        # First refresh should succeed
+        await send_message(writer, {"type": "command", "cmd": "refresh"})
+        response1 = await recv_message(reader)
+        assert response1["status"] == "ok"
+
+        # Wait for the background task to complete
+        await asyncio.wait_for(callback_called.wait(), timeout=2.0)
+        await asyncio.sleep(0.05)
+
+        # Second refresh should be rejected (within cooldown)
+        await send_message(writer, {"type": "command", "cmd": "refresh"})
+        response2 = await recv_message(reader)
+        assert response2["type"] == "error"
+        assert "cooldown" in response2["msg"].lower()
+
+        close_writer(writer)
+        await server.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_refresh_allowed_after_cooldown(self, socket_path, context):
+        """Both refreshes should succeed when cooldown is 0."""
+        call_count = 0
+
+        async def mock_callback():
+            nonlocal call_count
+            call_count += 1
+
+        server = IPCServer(
+            socket_path=socket_path,
+            context=context,
+            run_tasks_callback=mock_callback,
+            refresh_cooldown_seconds=0,
+        )
+        await server.start()
+
+        reader, writer = await connect_client(socket_path)
+
+        # First refresh
+        await send_message(writer, {"type": "command", "cmd": "refresh"})
+        response1 = await recv_message(reader)
+        assert response1["status"] == "ok"
+
+        # Wait for the first task to complete
+        await asyncio.sleep(0.1)
+
+        # Second refresh should also succeed (cooldown=0)
+        await send_message(writer, {"type": "command", "cmd": "refresh"})
+        response2 = await recv_message(reader)
+        assert response2["status"] == "ok"
+
+        close_writer(writer)
+        await server.shutdown()
+
+    @pytest.mark.asyncio
+    async def test_concurrent_refresh_prevented(self, socket_path, context):
+        """Refresh while another is still running should be rejected."""
+        blocker = asyncio.Event()
+
+        async def slow_callback():
+            await blocker.wait()
+
+        server = IPCServer(
+            socket_path=socket_path,
+            context=context,
+            run_tasks_callback=slow_callback,
+            refresh_cooldown_seconds=0,
+        )
+        await server.start()
+
+        reader, writer = await connect_client(socket_path)
+
+        # First refresh starts but blocks on the event
+        await send_message(writer, {"type": "command", "cmd": "refresh"})
+        response1 = await recv_message(reader)
+        assert response1["status"] == "ok"
+
+        # Give the task a moment to start running
+        await asyncio.sleep(0.05)
+
+        # Second refresh should be rejected (first is still running)
+        await send_message(writer, {"type": "command", "cmd": "refresh"})
+        response2 = await recv_message(reader)
+        assert response2["type"] == "error"
+        assert "already running" in response2["msg"].lower()
+
+        # Unblock the first refresh so cleanup is clean
+        blocker.set()
+        await asyncio.sleep(0.05)
+
+        close_writer(writer)
+        await server.shutdown()

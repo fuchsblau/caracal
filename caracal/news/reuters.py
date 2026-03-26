@@ -1,4 +1,4 @@
-"""Reuters RSS news source."""
+"""RSS news sources for financial news."""
 
 from __future__ import annotations
 
@@ -6,39 +6,56 @@ import logging
 from calendar import timegm
 from datetime import UTC, datetime
 
+from urllib.request import Request, urlopen
+
 import feedparser
 
 from caracal.news.protocol import NewsItem
 
 logger = logging.getLogger("caracal.news")
 
+FEED_TIMEOUT = 30
+
 
 class ReutersRSSSource:
-    """Fetch news from Reuters RSS feeds."""
+    """Fetch news from financial RSS feeds."""
 
-    FEEDS: dict[str, str] = {
-        "business": "https://www.reutersagency.com/feed/?best-topics=business-finance&post_type=best",
-        "markets": "https://www.reutersagency.com/feed/?best-topics=markets&post_type=best",
-        "tech": "https://www.reutersagency.com/feed/?best-topics=tech&post_type=best",
+    FEEDS: dict[str, tuple[str, str]] = {
+        "markets": (
+            "bloomberg",
+            "https://feeds.bloomberg.com/markets/news.rss",
+        ),
+        "general": (
+            "marketwatch",
+            "https://feeds.content.dowjones.io/public/rss/mw_marketpulse",
+        ),
+        "top-news": (
+            "cnbc",
+            "https://www.cnbc.com/id/100003114/device/rss/rss.html",
+        ),
     }
 
     def fetch(self) -> list[NewsItem]:
-        """Fetch news items from all Reuters RSS feeds.
+        """Fetch news items from all RSS feeds.
 
         Errors on individual feeds are logged and skipped so that
         remaining feeds are still processed.
         """
         items: list[NewsItem] = []
-        for feed_name, url in self.FEEDS.items():
+        for feed_name, (source, url) in self.FEEDS.items():
             try:
-                items.extend(self._parse_feed(feed_name, url))
+                items.extend(self._parse_feed(feed_name, source, url))
             except Exception:
                 logger.error("Failed to fetch feed %s", feed_name, exc_info=True)
         return items
 
-    def _parse_feed(self, feed_name: str, url: str) -> list[NewsItem]:
+    def _parse_feed(
+        self, feed_name: str, source: str, url: str
+    ) -> list[NewsItem]:
         """Parse a single RSS feed into NewsItem objects."""
-        parsed = feedparser.parse(url)
+        response = urlopen(Request(url), timeout=FEED_TIMEOUT)
+        raw = response.read()
+        parsed = feedparser.parse(raw)
 
         if parsed.bozo and not parsed.entries:
             raise ValueError(
@@ -47,12 +64,14 @@ class ReutersRSSSource:
 
         items: list[NewsItem] = []
         for entry in parsed.entries:
-            item = self._entry_to_item(entry, feed_name)
+            item = self._entry_to_item(entry, source, feed_name)
             if item is not None:
                 items.append(item)
         return items
 
-    def _entry_to_item(self, entry: dict, feed_name: str) -> NewsItem | None:
+    def _entry_to_item(
+        self, entry: dict, source: str, feed_name: str
+    ) -> NewsItem | None:
         """Convert a feedparser entry to a NewsItem."""
         guid = getattr(entry, "id", None) or getattr(entry, "link", None)
         if not guid:
@@ -68,7 +87,7 @@ class ReutersRSSSource:
 
         return NewsItem(
             id=guid,
-            source="reuters",
+            source=source,
             feed=feed_name,
             headline=headline,
             summary=summary,

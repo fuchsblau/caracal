@@ -7,6 +7,8 @@ import tomllib
 from dataclasses import dataclass, field, fields
 from pathlib import Path
 
+from croniter import croniter
+
 _KNOWN_PROVIDERS = {"yahoo", "massive", "ibkr", "alphavantage", "eodhd", "finnhub"}
 
 CONFIG_DIR = Path.home() / ".caracal"
@@ -176,6 +178,21 @@ def load_config(path: Path | None = None) -> CaracalConfig:
     # Extract worker config
     worker_data = data.pop("worker", {})
     worker = WorkerConfig(**worker_data)
+
+    # Validate worker cron expressions
+    for field_name in ("fetch_schedule", "analysis_schedule"):
+        value = getattr(worker, field_name)
+        if not croniter.is_valid(value):
+            raise ConfigError(
+                f"Invalid {field_name} '{value}' in {config_path}. "
+                f"Must be a valid cron expression."
+            )
+
+    if worker.retention_days < 1:
+        raise ConfigError(
+            f"Invalid retention_days '{worker.retention_days}' in {config_path}. "
+            f"Must be >= 1."
+        )
 
     valid_fields = {f.name for f in fields(CaracalConfig)} - {"providers", "worker"}
     filtered = {k: v for k, v in data.items() if k in valid_fields}

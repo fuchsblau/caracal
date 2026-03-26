@@ -203,3 +203,40 @@ class TestWorkerConfig:
         config_file.write_text('[worker]\nfetch_schedule = "0 4 * * 1-5"\n')
         config = load_config(config_file)
         assert config.worker.retention_days == 7
+
+
+class TestWorkerConfigValidation:
+    def test_valid_worker_config_loads(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text(
+            '[worker]\nfetch_schedule = "0 6 * * 1-5"\n'
+            'analysis_schedule = "0 7 * * 1-5"\n'
+            "retention_days = 14\n"
+        )
+        cfg = load_config(config_file)
+        assert cfg.worker.fetch_schedule == "0 6 * * 1-5"
+        assert cfg.worker.retention_days == 14
+
+    def test_invalid_cron_expression_raises(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('[worker]\nfetch_schedule = "not a cron"\n')
+        with pytest.raises(ConfigError, match="fetch_schedule"):
+            load_config(config_file)
+
+    def test_invalid_analysis_schedule_raises(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text('[worker]\nanalysis_schedule = "*/invalid"\n')
+        with pytest.raises(ConfigError, match="analysis_schedule"):
+            load_config(config_file)
+
+    def test_retention_days_zero_raises(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text("[worker]\nretention_days = 0\n")
+        with pytest.raises(ConfigError, match="retention_days"):
+            load_config(config_file)
+
+    def test_retention_days_negative_raises(self, tmp_path):
+        config_file = tmp_path / "config.toml"
+        config_file.write_text("[worker]\nretention_days = -1\n")
+        with pytest.raises(ConfigError, match="retention_days"):
+            load_config(config_file)

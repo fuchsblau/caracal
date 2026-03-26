@@ -53,8 +53,12 @@ class TestPIDFile:
 class TestRunOnce:
     @pytest.mark.asyncio
     async def test_run_once_no_tickers(self, config, pid_dir):
+        from unittest.mock import patch
+
         service = DaemonService(config, pid_dir=pid_dir)
-        results = await service.run_once()
+        with patch("caracal.daemon.tasks.news.ReutersRSSSource") as mock_src:
+            mock_src.return_value.fetch.return_value = []
+            results = await service.run_once()
         # Should run all data tasks (fetch, analysis, news) but with 0 items
         assert len(results) == 3
         for r in results:
@@ -73,6 +77,16 @@ class TestRunOnce:
         service = DaemonService(config, pid_dir=pid_dir)
         registry = service._build_registry(include_maintenance=True)
         assert "cleanup" in registry.task_names
+
+
+class TestPIDFilePermissions:
+    def test_pid_file_has_restrictive_permissions(self, config, pid_dir):
+        service = DaemonService(config, pid_dir=pid_dir)
+        service._write_pid()
+
+        pid_file = pid_dir / "caracal.pid"
+        mode = pid_file.stat().st_mode & 0o777
+        assert mode == 0o600, f"Expected 0o600, got {oct(mode)}"
 
 
 class TestStop:

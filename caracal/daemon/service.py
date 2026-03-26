@@ -71,6 +71,7 @@ class DaemonService:
     def _write_pid(self) -> None:
         self._pid_dir.mkdir(parents=True, exist_ok=True)
         self._pid_path.write_text(str(os.getpid()))
+        self._pid_path.chmod(0o600)
 
     def _remove_pid(self) -> None:
         self._pid_path.unlink(missing_ok=True)
